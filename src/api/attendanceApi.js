@@ -172,6 +172,36 @@ export async function syncScheduledTimes(name, code) {
   return response.json();
 }
 
+// Emails an offer letter to every applicant whose Sent column isn't
+// already "sent" (safe to run repeatedly — already-sent applicants are
+// skipped). Director-only. Returns { success: true, sentTo, skipped }
+// or { success: false, error }. Throws (with err.name === 'AbortError'
+// on timeout) on network failure.
+export async function sendOfferLetters(name, code) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'sendOfferLetters', name, code }),
+  });
+
+  return response.json();
+}
+
+// Scans Gmail for unread offer-letter replies and fills in each
+// matching applicant's Accept/Decline column. Director-only. Returns
+// { success: true, updatedEmails } or { success: false, error }.
+// Throws (with err.name === 'AbortError' on timeout) on network
+// failure.
+export async function checkOfferReplies(name, code) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'checkOfferReplies', name, code }),
+  });
+
+  return response.json();
+}
+
 // Fills in a Personal Code (birthday as MMDDYYYY) on the sheet for
 // every roster name that doesn't have one yet; existing codes are
 // never touched. Returns { success: true, message, generatedNames,

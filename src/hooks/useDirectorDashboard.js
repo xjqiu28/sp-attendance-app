@@ -9,6 +9,8 @@ import {
   getApplicationsView,
   updateApplication,
   syncScheduledTimes,
+  sendOfferLetters,
+  checkOfferReplies,
 } from '../api/attendanceApi.js';
 import { toBackendDate, toBackendDateTime, todayDateInputValue } from '../utils/dateTimeFormat.js';
 
@@ -67,6 +69,16 @@ export default function useDirectorDashboard() {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationsError, setApplicationsError] = useState(null);
   const [syncScheduleState, setSyncScheduleState] = useState({
+    loading: false,
+    message: null,
+    error: null,
+  });
+  const [offerLettersState, setOfferLettersState] = useState({
+    loading: false,
+    message: null,
+    error: null,
+  });
+  const [offerRepliesState, setOfferRepliesState] = useState({
     loading: false,
     message: null,
     error: null,
@@ -346,6 +358,64 @@ export default function useDirectorDashboard() {
     }
   }
 
+  // Sending letters/checking replies both change columns on applicant
+  // rows already loaded into applicationsData (Sent, Accept/Decline) —
+  // simplest to just reload the whole view afterward rather than
+  // trying to patch individual entries from a bare name/email list.
+  async function handleSendOfferLetters() {
+    if (!credentials) {
+      return;
+    }
+
+    setOfferLettersState({ loading: true, message: null, error: null });
+
+    try {
+      const result = await sendOfferLetters(credentials.name, credentials.code);
+
+      if (result.success) {
+        const summary =
+          result.sentTo.length > 0
+            ? `Sent ${result.sentTo.length} offer letter${result.sentTo.length === 1 ? '' : 's'}: ${result.sentTo.join(', ')}.`
+            : 'Nothing to send — everyone already has one.';
+        const skippedNote =
+          result.skipped.length > 0 ? ` Skipped (invalid/missing email): ${result.skipped.join(', ')}.` : '';
+
+        setOfferLettersState({ loading: false, message: summary + skippedNote, error: null });
+        loadApplications(credentials);
+      } else {
+        setOfferLettersState({ loading: false, message: null, error: result.error });
+      }
+    } catch (err) {
+      setOfferLettersState({ loading: false, message: null, error: networkErrorText(err) });
+    }
+  }
+
+  async function handleCheckOfferReplies() {
+    if (!credentials) {
+      return;
+    }
+
+    setOfferRepliesState({ loading: true, message: null, error: null });
+
+    try {
+      const result = await checkOfferReplies(credentials.name, credentials.code);
+
+      if (result.success) {
+        const summary =
+          result.updatedEmails.length > 0
+            ? `Updated ${result.updatedEmails.length} ${result.updatedEmails.length === 1 ? 'reply' : 'replies'}: ${result.updatedEmails.join(', ')}.`
+            : 'No new replies found.';
+
+        setOfferRepliesState({ loading: false, message: summary, error: null });
+        loadApplications(credentials);
+      } else {
+        setOfferRepliesState({ loading: false, message: null, error: result.error });
+      }
+    } catch (err) {
+      setOfferRepliesState({ loading: false, message: null, error: networkErrorText(err) });
+    }
+  }
+
   function handleLogOut() {
     setCredentials(null);
     setDashboardData(null);
@@ -356,6 +426,8 @@ export default function useDirectorDashboard() {
     setApplicationsData(null);
     setApplicationsError(null);
     setSyncScheduleState({ loading: false, message: null, error: null });
+    setOfferLettersState({ loading: false, message: null, error: null });
+    setOfferRepliesState({ loading: false, message: null, error: null });
   }
 
   async function handleGenerateCodes() {
@@ -400,6 +472,8 @@ export default function useDirectorDashboard() {
     applicationsLoading,
     applicationsError,
     syncScheduleState,
+    offerLettersState,
+    offerRepliesState,
     handleSubmit,
     handleModeChange,
     handleViewModeChange,
@@ -412,5 +486,7 @@ export default function useDirectorDashboard() {
     handleUnapproveWeek,
     handleUpdateApplication,
     handleSyncScheduledTimes,
+    handleSendOfferLetters,
+    handleCheckOfferReplies,
   };
 }

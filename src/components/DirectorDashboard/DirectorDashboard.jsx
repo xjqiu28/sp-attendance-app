@@ -32,6 +32,8 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     applicationsLoading,
     applicationsError,
     syncScheduleState,
+    offerLettersState,
+    offerRepliesState,
     handleSubmit,
     handleModeChange,
     handleViewModeChange,
@@ -44,6 +46,8 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleUnapproveWeek,
     handleUpdateApplication,
     handleSyncScheduledTimes,
+    handleSendOfferLetters,
+    handleCheckOfferReplies,
   } = useDirectorDashboard();
 
   if (!credentials) {
@@ -158,6 +162,10 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           syncState={syncScheduleState}
           onSync={handleSyncScheduledTimes}
           onUpdateApplication={handleUpdateApplication}
+          offerLettersState={offerLettersState}
+          onSendOfferLetters={handleSendOfferLetters}
+          offerRepliesState={offerRepliesState}
+          onCheckOfferReplies={handleCheckOfferReplies}
         />
       ) : (
         <>
