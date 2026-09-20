@@ -1,6 +1,28 @@
 @use '@/styles/variables' as vars;
 
 .application-card {
+  // Collapsed by default (see ApplicationCard.jsx) — the header is the
+  // only child then, so this also drops the header's own bottom margin
+  // that exists to separate it from the fields/editable section below.
+  > .attendance-card-header:last-child {
+    margin-bottom: 0;
+  }
+
+  &-toggle {
+    cursor: pointer;
+    user-select: none;
+
+    &:focus-visible {
+      outline: 2px solid vars.$color-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &-chevron {
+    color: vars.$color-text-secondary;
+    font-size: 12px;
+  }
+
   &-editable {
     margin-top: 12px;
     padding-top: 12px;
