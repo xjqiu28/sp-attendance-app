@@ -6,35 +6,6 @@
     padding-top: 12px;
     border-top: 1px solid vars.$color-border-light;
 
-    label {
-      display: block;
-      font-size: 12px;
-      color: vars.$color-text-secondary;
-      margin-bottom: 4px;
-      margin-top: 10px;
-
-      &:first-child {
-        margin-top: 0;
-      }
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-      border: 1px solid vars.$color-border;
-      border-radius: 6px;
-      font-size: 16px;
-      background: vars.$color-surface;
-      font-family: inherit;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
     button {
       width: 100%;
       margin-top: 14px;
@@ -54,13 +25,112 @@
     }
   }
 
+  &-field {
+    margin-top: 10px;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: vars.$color-text-secondary;
+      margin-bottom: 4px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid vars.$color-border;
+      border-radius: 6px;
+      font-size: 16px;
+      background: vars.$color-surface;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+  }
+
   &-editable-row {
     display: flex;
     gap: 12px;
+    margin-top: 10px;
 
-    > div {
+    > .application-card-field {
       flex: 1;
       min-width: 0;
+      margin-top: 0;
     }
+  }
+}
+
+// List-view alternative — reuses .attendance-row (see AttendanceCard.scss),
+// which already handles the read-only .attendance-card-fields section.
+// This just makes the editable section flow inline the same way
+// EditEntryCard's .edit-entry-field does, instead of stacking vertically.
+.attendance-row .application-card-editable {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  // As a flex item of .attendance-row, this would otherwise default to
+  // min-width:auto and refuse to shrink to the row's width — its own
+  // flex-wrap never kicks in and the fields overflow/overlap instead
+  // of wrapping onto new lines.
+  flex: 1 1 100%;
+  min-width: 0;
+
+  .application-card-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0;
+    // Without this, the outer row's flex-wrap shrinks this wrapper
+    // below its own content's width (the input's 140px doesn't
+    // propagate up to size this box), collapsing label and input on
+    // top of each other instead of wrapping the whole field as a unit.
+    flex: none;
+
+    label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    input,
+    select,
+    textarea {
+      width: auto;
+      min-width: 140px;
+    }
+
+    textarea {
+      min-height: 32px;
+    }
+  }
+
+  // Lets the pair's two .application-card-field children join this
+  // flex row directly, instead of being wrapped as their own row.
+  .application-card-editable-row {
+    display: contents;
+  }
+
+  button {
+    width: auto;
+    flex: none;
+    margin-top: 0;
+  }
+
+  .status {
+    margin-top: 0;
+    min-height: auto;
   }
 }

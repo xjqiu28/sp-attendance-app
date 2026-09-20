@@ -38,6 +38,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleModeChange,
     handleViewModeChange,
     handleWeekChange,
+    handleRefresh,
     handleLogOut,
     handleGenerateCodes,
     handleEditDateChange,
@@ -79,6 +80,12 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           ? 'Edit Day'
           : 'Applications';
 
+  // Each mode's data is cached (see useDirectorDashboard), so switching
+  // tabs doesn't refetch — this is the escape hatch for getting fresh
+  // data on demand instead.
+  const currentModeLoading =
+    mode === 'edit' ? editDayLoading : mode === 'applications' ? applicationsLoading : dashboardLoading;
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -86,6 +93,9 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
 
         <div className="dashboard-header-actions">
           <GenerateCodesButton state={generateCodesState} onClick={handleGenerateCodes} />
+          <button type="button" className="tab" onClick={handleRefresh} disabled={currentModeLoading}>
+            {currentModeLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
           <button type="button" className="tab" onClick={handleLogOut}>
             Log out
           </button>
@@ -124,24 +134,22 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           </button>
         </div>
 
-        {mode !== 'applications' && (
-          <div className="tabs view-mode-tabs">
-            <button
-              type="button"
-              className={viewMode === 'card' ? 'tab active' : 'tab'}
-              onClick={() => handleViewModeChange('card')}
-            >
-              Card
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'list' ? 'tab active' : 'tab'}
-              onClick={() => handleViewModeChange('list')}
-            >
-              List
-            </button>
-          </div>
-        )}
+        <div className="tabs view-mode-tabs">
+          <button
+            type="button"
+            className={viewMode === 'card' ? 'tab active' : 'tab'}
+            onClick={() => handleViewModeChange('card')}
+          >
+            Card
+          </button>
+          <button
+            type="button"
+            className={viewMode === 'list' ? 'tab active' : 'tab'}
+            onClick={() => handleViewModeChange('list')}
+          >
+            List
+          </button>
+        </div>
       </div>
 
       {mode === 'edit' ? (
@@ -166,6 +174,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           onSendOfferLetters={handleSendOfferLetters}
           offerRepliesState={offerRepliesState}
           onCheckOfferReplies={handleCheckOfferReplies}
+          viewMode={viewMode}
         />
       ) : (
         <>

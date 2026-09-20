@@ -4,9 +4,6 @@ import '@/App.scss'; // .tab, reused here for the sync button's base look
 import '@/styles/CardGrid.scss';
 import './ApplicationsView.scss';
 
-// Unlike Daily/Weekly/Edit Day, Applications always renders as a card
-// grid — its field set is much larger than an attendance entry, so the
-// dense .entry-list row layout those views offer doesn't fit here.
 export default function ApplicationsView({
   data,
   loading,
@@ -18,6 +15,7 @@ export default function ApplicationsView({
   onSendOfferLetters,
   offerRepliesState,
   onCheckOfferReplies,
+  viewMode,
 }) {
   return (
     <div className="applications-view">
@@ -48,9 +46,14 @@ export default function ApplicationsView({
         <StatusMessage text="Loading..." type="" />
       ) : (
         data && (
-          <div className="card-grid">
+          <div className={viewMode === 'list' ? 'entry-list' : 'card-grid'}>
             {data.applications.map((entry) => (
-              <ApplicationCard key={entry.email || `${entry.firstName}-${entry.lastName}`} entry={entry} onSave={onUpdateApplication} />
+              <ApplicationCard
+                key={entry.email || `${entry.firstName}-${entry.lastName}`}
+                entry={entry}
+                onSave={onUpdateApplication}
+                viewMode={viewMode}
+              />
             ))}
           </div>
         )

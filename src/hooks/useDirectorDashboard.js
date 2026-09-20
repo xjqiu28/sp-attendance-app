@@ -33,6 +33,15 @@ function readStoredViewMode() {
 
 // All state + network calls for the director dashboard, kept out of
 // the component so DirectorDashboard.jsx can stay focused on layout.
+//
+// Each mode's data is cached once fetched (dailyData, weeklyDataByWeek,
+// editDayDataByDate, applicationsData) so switching between tabs you've
+// already visited shows the cached result instantly instead of
+// re-fetching every time — a mode is only re-fetched when it has never
+// been loaded, when a param changes to a value not yet cached (a new
+// week or date), or when handleRefresh explicitly forces it. Logging
+// out clears every cache since the next login could be a different
+// director/dataset.
 export default function useDirectorDashboard() {
   const [selectedName, setSelectedName] = useState('');
   const [code, setCode] = useState('');
@@ -43,13 +52,25 @@ export default function useDirectorDashboard() {
   // Daily/Weekly toggle and week picker can re-fetch without asking again.
   const [credentials, setCredentials] = useState(null); // { name, code }
   const [mode, setMode] = useState('daily'); // 'daily' | 'weekly' | 'edit' | 'applications'
-  // Applies across all three modes — how densely entries are shown,
-  // not which entries. Persisted since it's a display preference, not
+  // Applies across all modes — how densely entries are shown, not
+  // which entries. Persisted since it's a display preference, not
   // per-session state.
   const [viewMode, setViewMode] = useState(readStoredViewMode); // 'card' | 'list'
-  const [dashboardData, setDashboardData] = useState(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [dashboardError, setDashboardError] = useState(null);
+
+  const [dailyData, setDailyData] = useState(null);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailyError, setDailyError] = useState(null);
+
+  // Keyed by weekNumber so revisiting a previously-viewed week (via the
+  // Weekly tab or the week picker) never re-fetches it.
+  const [weeklyDataByWeek, setWeeklyDataByWeek] = useState({});
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
+  const [weeklyError, setWeeklyError] = useState(null);
+  const [currentWeekNumber, setCurrentWeekNumber] = useState(null);
+
+  const dashboardData = mode === 'weekly' ? weeklyDataByWeek[currentWeekNumber] ?? null : dailyData;
+  const dashboardLoading = mode === 'weekly' ? weeklyLoading : dailyLoading;
+  const dashboardError = mode === 'weekly' ? weeklyError : dailyError;
 
   const [generateCodesState, setGenerateCodesState] = useState({
     loading: false,
@@ -58,11 +79,15 @@ export default function useDirectorDashboard() {
   });
 
   // 'Edit Day' mode's own date + data, kept separate from the
-  // daily/weekly dashboardData above since it's fetched independently.
+  // daily/weekly data above since it's fetched independently. Keyed by
+  // backend date string so switching back to an already-viewed date
+  // doesn't re-fetch it.
   const [editDate, setEditDate] = useState(todayDateInputValue()); // <input type="date"> value
-  const [editDayData, setEditDayData] = useState(null);
+  const [editDayDataByDate, setEditDayDataByDate] = useState({});
   const [editDayLoading, setEditDayLoading] = useState(false);
   const [editDayError, setEditDayError] = useState(null);
+
+  const editDayData = editDayDataByDate[toBackendDate(editDate)] ?? null;
 
   // 'Applications' mode's own data, independent of the others.
   const [applicationsData, setApplicationsData] = useState(null);
@@ -84,27 +109,53 @@ export default function useDirectorDashboard() {
     error: null,
   });
 
-  async function loadView(activeCredentials, nextMode, weekNumber) {
-    setDashboardLoading(true);
-    setDashboardError(null);
+  async function loadDaily(activeCredentials, options = {}) {
+    if (!options.force && dailyData) {
+      return;
+    }
+
+    setDailyLoading(true);
+    setDailyError(null);
 
     try {
-      const result = await getDirectorView(
-        activeCredentials.name,
-        activeCredentials.code,
-        nextMode,
-        weekNumber
-      );
+      const result = await getDirectorView(activeCredentials.name, activeCredentials.code, 'daily');
 
       if (result.success) {
-        setDashboardData(result);
+        setDailyData(result);
       } else {
-        setDashboardError(result.error);
+        setDailyError(result.error);
       }
     } catch (err) {
-      setDashboardError(networkErrorText(err));
+      setDailyError(networkErrorText(err));
     } finally {
-      setDashboardLoading(false);
+      setDailyLoading(false);
+    }
+  }
+
+  // weekNumber omitted fetches the most recent week — pass options.force
+  // to re-fetch even if that week is already cached (e.g. Refresh).
+  async function loadWeekly(activeCredentials, weekNumber, options = {}) {
+    if (!options.force && weekNumber !== undefined && weeklyDataByWeek[weekNumber]) {
+      setCurrentWeekNumber(weekNumber);
+      return;
+    }
+
+    setWeeklyLoading(true);
+    setWeeklyError(null);
+
+    try {
+      const result = await getDirectorView(activeCredentials.name, activeCredentials.code, 'weekly', weekNumber);
+
+      if (result.success) {
+        setWeeklyDataByWeek((previous) => ({ ...previous, [result.weekNumber]: result }));
+        setCurrentWeekNumber(result.weekNumber);
+      } else {
+        setWeeklyError(result.error);
+      }
+    } catch (err) {
+      setWeeklyError(networkErrorText(err));
+    } finally {
+      setWeeklyLoading(false);
     }
   }
 
@@ -128,7 +179,7 @@ export default function useDirectorDashboard() {
         setStatus(null);
         setCredentials({ name: selectedName, code: trimmedCode });
         setMode('daily');
-        setDashboardData(result);
+        setDailyData(result);
       } else {
         setStatus({ text: result.error, type: 'error' });
       }
@@ -150,8 +201,10 @@ export default function useDirectorDashboard() {
       loadEditDay(credentials, editDate);
     } else if (newMode === 'applications') {
       loadApplications(credentials);
-    } else {
-      loadView(credentials, newMode);
+    } else if (newMode === 'daily') {
+      loadDaily(credentials);
+    } else if (newMode === 'weekly') {
+      loadWeekly(credentials, currentWeekNumber ?? undefined);
     }
   }
 
@@ -171,22 +224,44 @@ export default function useDirectorDashboard() {
       return;
     }
 
-    loadView(credentials, 'weekly', weekNumber);
+    loadWeekly(credentials, weekNumber);
   }
 
-  async function loadEditDay(activeCredentials, dateInputValue) {
+  // Re-fetches whatever's currently on screen, ignoring any cache —
+  // the escape hatch for when a director wants to confirm they're
+  // looking at up-to-date data (e.g. Daily's live sign-in status)
+  // instead of a possibly-stale cached view.
+  function handleRefresh() {
+    if (!credentials) {
+      return;
+    }
+
+    if (mode === 'daily') {
+      loadDaily(credentials, { force: true });
+    } else if (mode === 'weekly') {
+      loadWeekly(credentials, currentWeekNumber ?? undefined, { force: true });
+    } else if (mode === 'edit') {
+      loadEditDay(credentials, editDate, { force: true });
+    } else if (mode === 'applications') {
+      loadApplications(credentials, { force: true });
+    }
+  }
+
+  async function loadEditDay(activeCredentials, dateInputValue, options = {}) {
+    const backendDate = toBackendDate(dateInputValue);
+
+    if (!options.force && editDayDataByDate[backendDate]) {
+      return;
+    }
+
     setEditDayLoading(true);
     setEditDayError(null);
 
     try {
-      const result = await getEditDayView(
-        activeCredentials.name,
-        activeCredentials.code,
-        toBackendDate(dateInputValue)
-      );
+      const result = await getEditDayView(activeCredentials.name, activeCredentials.code, backendDate);
 
       if (result.success) {
-        setEditDayData(result);
+        setEditDayDataByDate((previous) => ({ ...previous, [backendDate]: result }));
       } else {
         setEditDayError(result.error);
       }
@@ -207,6 +282,7 @@ export default function useDirectorDashboard() {
   // the calling card can show its own inline feedback without needing
   // its own try/catch.
   async function handleSaveEntry(targetName, signInInputValue, signOutInputValue) {
+    const backendDate = toBackendDate(editDate);
     const signInTime = toBackendDateTime(editDate, signInInputValue);
     const signOutTime = toBackendDateTime(editDate, signOutInputValue);
 
@@ -217,7 +293,7 @@ export default function useDirectorDashboard() {
         credentials.name,
         credentials.code,
         targetName,
-        toBackendDate(editDate),
+        backendDate,
         signInTime,
         signOutTime
       );
@@ -226,14 +302,23 @@ export default function useDirectorDashboard() {
     }
 
     if (result.success) {
-      setEditDayData((previous) => ({
+      setEditDayDataByDate((previous) => ({
         ...previous,
-        entries: previous.entries.map((entry) =>
-          entry.name === targetName
-            ? { ...entry, signInTime: signInTime || null, signOutTime: signOutTime || null }
-            : entry
-        ),
+        [backendDate]: {
+          ...previous[backendDate],
+          entries: previous[backendDate].entries.map((entry) =>
+            entry.name === targetName
+              ? { ...entry, signInTime: signInTime || null, signOutTime: signOutTime || null }
+              : entry
+          ),
+        },
       }));
+
+      // An edited attendance record can change what Daily/Weekly would
+      // show (late flags, totals, who's signed in) — drop those caches
+      // so the next visit re-fetches instead of showing stale data.
+      setDailyData(null);
+      setWeeklyDataByWeek({});
     }
 
     return result;
@@ -253,13 +338,16 @@ export default function useDirectorDashboard() {
     }
 
     if (result.success) {
-      setDashboardData((previous) => ({
+      setWeeklyDataByWeek((previous) => ({
         ...previous,
-        entries: previous.entries.map((entry) =>
-          entry.name === targetName
-            ? { ...entry, approval: { approvedBy: result.approvedBy, approvedAt: result.approvedAt } }
-            : entry
-        ),
+        [currentWeekNumber]: {
+          ...previous[currentWeekNumber],
+          entries: previous[currentWeekNumber].entries.map((entry) =>
+            entry.name === targetName
+              ? { ...entry, approval: { approvedBy: result.approvedBy, approvedAt: result.approvedAt } }
+              : entry
+          ),
+        },
       }));
     }
 
@@ -277,18 +365,25 @@ export default function useDirectorDashboard() {
     }
 
     if (result.success) {
-      setDashboardData((previous) => ({
+      setWeeklyDataByWeek((previous) => ({
         ...previous,
-        entries: previous.entries.map((entry) =>
-          entry.name === targetName ? { ...entry, approval: null } : entry
-        ),
+        [currentWeekNumber]: {
+          ...previous[currentWeekNumber],
+          entries: previous[currentWeekNumber].entries.map((entry) =>
+            entry.name === targetName ? { ...entry, approval: null } : entry
+          ),
+        },
       }));
     }
 
     return result;
   }
 
-  async function loadApplications(activeCredentials) {
+  async function loadApplications(activeCredentials, options = {}) {
+    if (!options.force && applicationsData) {
+      return;
+    }
+
     setApplicationsLoading(true);
     setApplicationsError(null);
 
@@ -350,6 +445,11 @@ export default function useDirectorDashboard() {
             : '';
 
         setSyncScheduleState({ loading: false, message: summary + skippedNote, error: null });
+
+        // Scheduled sign-in/out changes affect Daily/Weekly's late
+        // detection — drop those caches so they re-fetch fresh too.
+        setDailyData(null);
+        setWeeklyDataByWeek({});
       } else {
         setSyncScheduleState({ loading: false, message: null, error: result.error });
       }
@@ -381,7 +481,7 @@ export default function useDirectorDashboard() {
           result.skipped.length > 0 ? ` Skipped (invalid/missing email): ${result.skipped.join(', ')}.` : '';
 
         setOfferLettersState({ loading: false, message: summary + skippedNote, error: null });
-        loadApplications(credentials);
+        loadApplications(credentials, { force: true });
       } else {
         setOfferLettersState({ loading: false, message: null, error: result.error });
       }
@@ -407,7 +507,7 @@ export default function useDirectorDashboard() {
             : 'No new replies found.';
 
         setOfferRepliesState({ loading: false, message: summary, error: null });
-        loadApplications(credentials);
+        loadApplications(credentials, { force: true });
       } else {
         setOfferRepliesState({ loading: false, message: null, error: result.error });
       }
@@ -418,10 +518,14 @@ export default function useDirectorDashboard() {
 
   function handleLogOut() {
     setCredentials(null);
-    setDashboardData(null);
     setCode('');
     setGenerateCodesState({ loading: false, message: null, error: null });
-    setEditDayData(null);
+    setDailyData(null);
+    setDailyError(null);
+    setWeeklyDataByWeek({});
+    setWeeklyError(null);
+    setCurrentWeekNumber(null);
+    setEditDayDataByDate({});
     setEditDayError(null);
     setApplicationsData(null);
     setApplicationsError(null);
@@ -478,6 +582,7 @@ export default function useDirectorDashboard() {
     handleModeChange,
     handleViewModeChange,
     handleWeekChange,
+    handleRefresh,
     handleLogOut,
     handleGenerateCodes,
     handleEditDateChange,

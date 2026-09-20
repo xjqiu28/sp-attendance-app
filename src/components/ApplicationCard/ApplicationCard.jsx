@@ -9,7 +9,7 @@ const ACCEPT_DECLINE_BADGE_CLASS = {
   Decline: 'status-late',
 };
 
-export default function ApplicationCard({ entry, onSave }) {
+export default function ApplicationCard({ entry, onSave, viewMode }) {
   const [fields, setFields] = useState({
     missingDocuments: entry.missingDocuments,
     acceptDecline: entry.acceptDecline,
@@ -38,7 +38,7 @@ export default function ApplicationCard({ entry, onSave }) {
   }
 
   return (
-    <div className="attendance-card application-card">
+    <div className={viewMode === 'list' ? 'attendance-row application-card' : 'attendance-card application-card'}>
       <div className="attendance-card-header">
         <span className="attendance-card-name">
           {entry.firstName} {entry.lastName}
@@ -85,27 +85,31 @@ export default function ApplicationCard({ entry, onSave }) {
       </div>
 
       <div className="application-card-editable">
-        <label htmlFor={`${fieldId}-missing`}>Missing Documents</label>
-        <textarea
-          id={`${fieldId}-missing`}
-          rows={2}
-          value={fields.missingDocuments}
-          onChange={(event) => updateField('missingDocuments', event.target.value)}
-        />
+        <div className="application-card-field">
+          <label htmlFor={`${fieldId}-missing`}>Missing Documents</label>
+          <textarea
+            id={`${fieldId}-missing`}
+            rows={2}
+            value={fields.missingDocuments}
+            onChange={(event) => updateField('missingDocuments', event.target.value)}
+          />
+        </div>
 
-        <label htmlFor={`${fieldId}-accept`}>Accept/Decline</label>
-        <select
-          id={`${fieldId}-accept`}
-          value={fields.acceptDecline}
-          onChange={(event) => updateField('acceptDecline', event.target.value)}
-        >
-          <option value="">—</option>
-          <option value="Accept">Accept</option>
-          <option value="Decline">Decline</option>
-        </select>
+        <div className="application-card-field">
+          <label htmlFor={`${fieldId}-accept`}>Accept/Decline</label>
+          <select
+            id={`${fieldId}-accept`}
+            value={fields.acceptDecline}
+            onChange={(event) => updateField('acceptDecline', event.target.value)}
+          >
+            <option value="">—</option>
+            <option value="Accept">Accept</option>
+            <option value="Decline">Decline</option>
+          </select>
+        </div>
 
         <div className="application-card-editable-row">
-          <div>
+          <div className="application-card-field">
             <label htmlFor={`${fieldId}-ss`}>SS</label>
             <input
               type="text"
@@ -115,7 +119,7 @@ export default function ApplicationCard({ entry, onSave }) {
             />
           </div>
 
-          <div>
+          <div className="application-card-field">
             <label htmlFor={`${fieldId}-w4`}>W-4 Forms</label>
             <input
               type="text"
@@ -127,7 +131,7 @@ export default function ApplicationCard({ entry, onSave }) {
         </div>
 
         <div className="application-card-editable-row">
-          <div>
+          <div className="application-card-field">
             <label htmlFor={`${fieldId}-resignation-email`}>Resignation Email Sent</label>
             <input
               type="text"
@@ -137,7 +141,7 @@ export default function ApplicationCard({ entry, onSave }) {
             />
           </div>
 
-          <div>
+          <div className="application-card-field">
             <label htmlFor={`${fieldId}-resignation-letter`}>Resignation Letters</label>
             <input
               type="text"
