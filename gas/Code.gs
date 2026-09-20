@@ -199,6 +199,10 @@ function doPost(e) {
       output = updateApplication(submittedName, submittedPersonalCode, data.targetEmail, data.updates);
     } else if (action === 'syncScheduledTimes') {
       output = syncScheduledTimes(submittedName, submittedPersonalCode);
+    } else if (action === 'sendOfferLetters') {
+      output = sendOfferLetterEmails(submittedName, submittedPersonalCode);
+    } else if (action === 'checkOfferReplies') {
+      output = checkOfferReplies(submittedName, submittedPersonalCode);
     } else if (action === 'generateCodes') {
       output = generatePersonalCodesFromBirthdays(submittedName, submittedPersonalCode);
     } else {

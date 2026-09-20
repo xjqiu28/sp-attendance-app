@@ -84,3 +84,19 @@ const APPLICATIONS_HEADERS = {
   resignationEmailSent: 'Resignation Email Sent',
   resignationLetters: 'Resignation Letters',
 };
+
+// ===================================================================
+// OFFER LETTERS (see Applications.gs's sendOfferLetterEmails)
+// ===================================================================
+// The subject line's "Summer Paradise Offer Letter" text is also what
+// checkOfferReplies searches Gmail for — keep that phrase in sync if
+// it's ever changed. Everything below is specific to this year's
+// calendar and needs updating each summer before sending offer letters.
+const OFFER_LETTER_SENDER_NAME = 'Wendy Wong';
+const OFFER_LETTER_REPLY_DEADLINE = '6/25';
+const OFFER_LETTER_TRAINING_DATE = '6/19 (Friday) from 10:00am to 4:00pm';
+const OFFER_LETTER_TRAINING_LOCATION = '4300 171st Street, Flushing, NY 11358 (Logos Community Church)';
+const OFFER_LETTER_W4_SS_DEADLINE = '6/5';
+const OFFER_LETTER_REFERENCE_DEADLINE = '6/26';
+const OFFER_LETTER_MISSING_DOCS_DEADLINE = '6/26';
+const OFFER_LETTER_ATTENDANCE_FORM_URL = 'https://forms.gle/GwwXfUto9JrbBrxr6';
