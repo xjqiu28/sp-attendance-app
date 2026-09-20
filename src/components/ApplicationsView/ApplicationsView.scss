@@ -11,6 +11,12 @@
     width: auto;
     flex: none;
     margin-top: 0;
+    // .tab is plain-transparent by default (see App.scss) — it relies
+    // on a container like .dashboard-header to give it a visible pill
+    // background. This toolbar sits below that header, not inside it,
+    // so without this override these buttons render as bare text.
+    background: vars.$color-app-bg;
+    color: vars.$color-text-secondary;
   }
 }
 

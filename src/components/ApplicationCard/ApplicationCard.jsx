@@ -86,9 +86,9 @@ export default function ApplicationCard({ entry, onSave }) {
 
       <div className="application-card-editable">
         <label htmlFor={`${fieldId}-missing`}>Missing Documents</label>
-        <input
-          type="text"
+        <textarea
           id={`${fieldId}-missing`}
+          rows={2}
           value={fields.missingDocuments}
           onChange={(event) => updateField('missingDocuments', event.target.value)}
         />
