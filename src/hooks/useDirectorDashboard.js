@@ -6,6 +6,9 @@ import {
   updateAttendanceEntry,
   approveWeek,
   unapproveWeek,
+  getApplicationsView,
+  updateApplication,
+  syncScheduledTimes,
 } from '../api/attendanceApi.js';
 import { toBackendDate, toBackendDateTime, todayDateInputValue } from '../utils/dateTimeFormat.js';
 
@@ -37,7 +40,7 @@ export default function useDirectorDashboard() {
   // Once logged in, the validated credentials are kept here so the
   // Daily/Weekly toggle and week picker can re-fetch without asking again.
   const [credentials, setCredentials] = useState(null); // { name, code }
-  const [mode, setMode] = useState('daily'); // 'daily' | 'weekly' | 'edit'
+  const [mode, setMode] = useState('daily'); // 'daily' | 'weekly' | 'edit' | 'applications'
   // Applies across all three modes — how densely entries are shown,
   // not which entries. Persisted since it's a display preference, not
   // per-session state.
@@ -58,6 +61,16 @@ export default function useDirectorDashboard() {
   const [editDayData, setEditDayData] = useState(null);
   const [editDayLoading, setEditDayLoading] = useState(false);
   const [editDayError, setEditDayError] = useState(null);
+
+  // 'Applications' mode's own data, independent of the others.
+  const [applicationsData, setApplicationsData] = useState(null);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState(null);
+  const [syncScheduleState, setSyncScheduleState] = useState({
+    loading: false,
+    message: null,
+    error: null,
+  });
 
   async function loadView(activeCredentials, nextMode, weekNumber) {
     setDashboardLoading(true);
@@ -123,6 +136,8 @@ export default function useDirectorDashboard() {
 
     if (newMode === 'edit') {
       loadEditDay(credentials, editDate);
+    } else if (newMode === 'applications') {
+      loadApplications(credentials);
     } else {
       loadView(credentials, newMode);
     }
@@ -261,6 +276,76 @@ export default function useDirectorDashboard() {
     return result;
   }
 
+  async function loadApplications(activeCredentials) {
+    setApplicationsLoading(true);
+    setApplicationsError(null);
+
+    try {
+      const result = await getApplicationsView(activeCredentials.name, activeCredentials.code);
+
+      if (result.success) {
+        setApplicationsData(result);
+      } else {
+        setApplicationsError(result.error);
+      }
+    } catch (err) {
+      setApplicationsError(networkErrorText(err));
+    } finally {
+      setApplicationsLoading(false);
+    }
+  }
+
+  // Same always-resolves pattern as handleSaveEntry/handleApproveWeek.
+  async function handleUpdateApplication(targetEmail, updates) {
+    let result;
+
+    try {
+      result = await updateApplication(credentials.name, credentials.code, targetEmail, updates);
+    } catch (err) {
+      return { success: false, error: networkErrorText(err) };
+    }
+
+    if (result.success) {
+      setApplicationsData((previous) => ({
+        ...previous,
+        applications: previous.applications.map((application) =>
+          application.email === targetEmail ? { ...application, ...updates } : application
+        ),
+      }));
+    }
+
+    return result;
+  }
+
+  async function handleSyncScheduledTimes() {
+    if (!credentials) {
+      return;
+    }
+
+    setSyncScheduleState({ loading: true, message: null, error: null });
+
+    try {
+      const result = await syncScheduledTimes(credentials.name, credentials.code);
+
+      if (result.success) {
+        const summary =
+          result.updatedNames.length > 0
+            ? `Synced ${result.updatedNames.length} ${result.updatedNames.length === 1 ? 'person' : 'people'}.`
+            : 'Nothing to sync.';
+        const skippedNote =
+          result.skippedNames.length > 0
+            ? ` Skipped (no Time set, or no matching attendance roster name): ${result.skippedNames.join(', ')}.`
+            : '';
+
+        setSyncScheduleState({ loading: false, message: summary + skippedNote, error: null });
+      } else {
+        setSyncScheduleState({ loading: false, message: null, error: result.error });
+      }
+    } catch (err) {
+      setSyncScheduleState({ loading: false, message: null, error: networkErrorText(err) });
+    }
+  }
+
   function handleLogOut() {
     setCredentials(null);
     setDashboardData(null);
@@ -268,6 +353,9 @@ export default function useDirectorDashboard() {
     setGenerateCodesState({ loading: false, message: null, error: null });
     setEditDayData(null);
     setEditDayError(null);
+    setApplicationsData(null);
+    setApplicationsError(null);
+    setSyncScheduleState({ loading: false, message: null, error: null });
   }
 
   async function handleGenerateCodes() {
@@ -308,6 +396,10 @@ export default function useDirectorDashboard() {
     editDayData,
     editDayLoading,
     editDayError,
+    applicationsData,
+    applicationsLoading,
+    applicationsError,
+    syncScheduleState,
     handleSubmit,
     handleModeChange,
     handleViewModeChange,
@@ -318,5 +410,7 @@ export default function useDirectorDashboard() {
     handleSaveEntry,
     handleApproveWeek,
     handleUnapproveWeek,
+    handleUpdateApplication,
+    handleSyncScheduledTimes,
   };
 }

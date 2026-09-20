@@ -123,6 +123,55 @@ export async function unapproveWeek(name, code, targetName, weekStart) {
   return response.json();
 }
 
+// Returns { success: true, tabName, applications: [{ firstName,
+// lastName, title, dateInformation, time, rate, email, sent, paidHours,
+// volunteerHours, missingDocuments, acceptDecline, ss, w4Forms,
+// resignationEmailSent, resignationLetters }] } for the current year's
+// Applications tab. Director-only, read-only. Throws (with
+// err.name === 'AbortError' on timeout) on network failure.
+export async function getApplicationsView(name, code) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'applicationsView', name, code }),
+  });
+
+  return response.json();
+}
+
+// Updates one applicant's editable tracking fields (matched by email).
+// updates uses the same field names getApplicationsView returns, e.g.
+// { missingDocuments, acceptDecline, ss, w4Forms, resignationEmailSent,
+// resignationLetters } — include only the fields you're changing.
+// Director-only. Returns { success: true, message } or { success:
+// false, error }. Throws (with err.name === 'AbortError' on timeout)
+// on network failure.
+export async function updateApplication(name, code, targetEmail, updates) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'updateApplication', name, code, targetEmail, updates }),
+  });
+
+  return response.json();
+}
+
+// Pulls First Name + Last Name + Time from the current year's
+// Applications tab and writes each matching person's Scheduled Sign
+// In/Scheduled Sign Out on the attendance roster. Director-only.
+// Returns { success: true, updatedNames, skippedNames } or
+// { success: false, error }. Throws (with err.name === 'AbortError' on
+// timeout) on network failure.
+export async function syncScheduledTimes(name, code) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'syncScheduledTimes', name, code }),
+  });
+
+  return response.json();
+}
+
 // Fills in a Personal Code (birthday as MMDDYYYY) on the sheet for
 // every roster name that doesn't have one yet; existing codes are
 // never touched. Returns { success: true, message, generatedNames,

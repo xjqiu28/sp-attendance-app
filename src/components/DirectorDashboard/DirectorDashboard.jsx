@@ -4,6 +4,7 @@ import StatusMessage from '../StatusMessage/StatusMessage.jsx';
 import DailyView from '../DailyView/DailyView.jsx';
 import WeeklyView from '../WeeklyView/WeeklyView.jsx';
 import EditDayView from '../EditDayView/EditDayView.jsx';
+import ApplicationsView from '../ApplicationsView/ApplicationsView.jsx';
 import GenerateCodesButton from '../GenerateCodesButton/GenerateCodesButton.jsx';
 import '@/App.scss'; // .tab, reused here for the mode tabs and log-out button
 import './DirectorDashboard.scss';
@@ -27,6 +28,10 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     editDayData,
     editDayLoading,
     editDayError,
+    applicationsData,
+    applicationsLoading,
+    applicationsError,
+    syncScheduleState,
     handleSubmit,
     handleModeChange,
     handleViewModeChange,
@@ -37,6 +42,8 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleSaveEntry,
     handleApproveWeek,
     handleUnapproveWeek,
+    handleUpdateApplication,
+    handleSyncScheduledTimes,
   } = useDirectorDashboard();
 
   if (!credentials) {
@@ -64,7 +71,9 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
       ? `Attendance — ${dashboardData?.date || ''}`
       : mode === 'weekly'
         ? `Weekly Totals — Week ${dashboardData?.weekNumber || ''}`
-        : 'Edit Day';
+        : mode === 'edit'
+          ? 'Edit Day'
+          : 'Applications';
 
   return (
     <div className="dashboard">
@@ -102,24 +111,33 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           >
             Edit Day
           </button>
+          <button
+            type="button"
+            className={mode === 'applications' ? 'tab active' : 'tab'}
+            onClick={() => handleModeChange('applications')}
+          >
+            Applications
+          </button>
         </div>
 
-        <div className="tabs view-mode-tabs">
-          <button
-            type="button"
-            className={viewMode === 'card' ? 'tab active' : 'tab'}
-            onClick={() => handleViewModeChange('card')}
-          >
-            Card
-          </button>
-          <button
-            type="button"
-            className={viewMode === 'list' ? 'tab active' : 'tab'}
-            onClick={() => handleViewModeChange('list')}
-          >
-            List
-          </button>
-        </div>
+        {mode !== 'applications' && (
+          <div className="tabs view-mode-tabs">
+            <button
+              type="button"
+              className={viewMode === 'card' ? 'tab active' : 'tab'}
+              onClick={() => handleViewModeChange('card')}
+            >
+              Card
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'list' ? 'tab active' : 'tab'}
+              onClick={() => handleViewModeChange('list')}
+            >
+              List
+            </button>
+          </div>
+        )}
       </div>
 
       {mode === 'edit' ? (
@@ -131,6 +149,15 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           error={editDayError}
           onSaveEntry={handleSaveEntry}
           viewMode={viewMode}
+        />
+      ) : mode === 'applications' ? (
+        <ApplicationsView
+          data={applicationsData}
+          loading={applicationsLoading}
+          error={applicationsError}
+          syncState={syncScheduleState}
+          onSync={handleSyncScheduledTimes}
+          onUpdateApplication={handleUpdateApplication}
         />
       ) : (
         <>
