@@ -10,17 +10,15 @@ const ACCEPT_DECLINE_BADGE_CLASS = {
 };
 
 export default function ApplicationCard({ entry, onSave, viewMode }) {
-  // Collapsed by default — 16 fields per applicant is a lot to scan
-  // through for every row, especially in list view, so only the name
-  // and status badges show until a director clicks to expand one.
+  // Collapsed by default — that's a lot of fields to scan through for
+  // every row, especially in list view, so only the name and status
+  // badges show until a director clicks to expand one.
   const [expanded, setExpanded] = useState(false);
   const [fields, setFields] = useState({
     missingDocuments: entry.missingDocuments,
     acceptDecline: entry.acceptDecline,
     ss: entry.ss,
     w4Forms: entry.w4Forms,
-    resignationEmailSent: entry.resignationEmailSent,
-    resignationLetters: entry.resignationLetters,
   });
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null); // { text, type }
@@ -151,28 +149,6 @@ export default function ApplicationCard({ entry, onSave, viewMode }) {
                   id={`${fieldId}-w4`}
                   value={fields.w4Forms}
                   onChange={(event) => updateField('w4Forms', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="application-card-editable-row">
-              <div className="application-card-field">
-                <label htmlFor={`${fieldId}-resignation-email`}>Resignation Email Sent</label>
-                <input
-                  type="text"
-                  id={`${fieldId}-resignation-email`}
-                  value={fields.resignationEmailSent}
-                  onChange={(event) => updateField('resignationEmailSent', event.target.value)}
-                />
-              </div>
-
-              <div className="application-card-field">
-                <label htmlFor={`${fieldId}-resignation-letter`}>Resignation Letters</label>
-                <input
-                  type="text"
-                  id={`${fieldId}-resignation-letter`}
-                  value={fields.resignationLetters}
-                  onChange={(event) => updateField('resignationLetters', event.target.value)}
                 />
               </div>
             </div>

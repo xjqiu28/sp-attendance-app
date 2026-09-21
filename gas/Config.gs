@@ -81,8 +81,6 @@ const APPLICATIONS_HEADERS = {
   acceptDecline: 'Accept/Decline',
   ss: 'SS',
   w4Forms: 'W-4 Forms',
-  resignationEmailSent: 'Resignation Email Sent',
-  resignationLetters: 'Resignation Letters',
 };
 
 // ===================================================================

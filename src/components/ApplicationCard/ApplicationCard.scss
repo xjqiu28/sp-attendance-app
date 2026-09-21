@@ -65,11 +65,13 @@
     select,
     textarea {
       width: 100%;
-      padding: 8px;
+      padding: 6px 8px;
       box-sizing: border-box;
       border: 1px solid vars.$color-border;
       border-radius: 6px;
-      font-size: 16px;
+      // Matches the app's base 13px (see App.scss) instead of LoginCard's
+      // 16px, which reads oversized next to the rest of this compact card.
+      font-size: 13px;
       background: vars.$color-surface;
       font-family: inherit;
     }
@@ -131,11 +133,11 @@
     select,
     textarea {
       width: auto;
-      min-width: 140px;
+      min-width: 110px;
     }
 
     textarea {
-      min-height: 32px;
+      min-height: 26px;
     }
   }
 

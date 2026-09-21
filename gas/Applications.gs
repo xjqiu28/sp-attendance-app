@@ -94,8 +94,6 @@ function buildApplicationEntry(columnIndexes, row) {
     acceptDecline: String(cell(APPLICATIONS_HEADERS.acceptDecline)).trim(),
     ss: String(cell(APPLICATIONS_HEADERS.ss)).trim(),
     w4Forms: String(cell(APPLICATIONS_HEADERS.w4Forms)).trim(),
-    resignationEmailSent: String(cell(APPLICATIONS_HEADERS.resignationEmailSent)).trim(),
-    resignationLetters: String(cell(APPLICATIONS_HEADERS.resignationLetters)).trim(),
   };
 }
 
@@ -193,8 +191,6 @@ function updateApplication(submittedName, submittedPersonalCode, targetEmail, up
     acceptDecline: APPLICATIONS_HEADERS.acceptDecline,
     ss: APPLICATIONS_HEADERS.ss,
     w4Forms: APPLICATIONS_HEADERS.w4Forms,
-    resignationEmailSent: APPLICATIONS_HEADERS.resignationEmailSent,
-    resignationLetters: APPLICATIONS_HEADERS.resignationLetters,
   };
 
   Object.keys(updates || {}).forEach((field) => {

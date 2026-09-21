@@ -125,9 +125,8 @@ export async function unapproveWeek(name, code, targetName, weekStart) {
 
 // Returns { success: true, tabName, applications: [{ firstName,
 // lastName, title, dateInformation, time, rate, email, sent, paidHours,
-// volunteerHours, missingDocuments, acceptDecline, ss, w4Forms,
-// resignationEmailSent, resignationLetters }] } for the current year's
-// Applications tab. Director-only, read-only. Throws (with
+// volunteerHours, missingDocuments, acceptDecline, ss, w4Forms }] } for
+// the current year's Applications tab. Director-only, read-only. Throws (with
 // err.name === 'AbortError' on timeout) on network failure.
 export async function getApplicationsView(name, code) {
   const response = await fetchWithTimeout(WEB_APP_URL, {
@@ -141,8 +140,8 @@ export async function getApplicationsView(name, code) {
 
 // Updates one applicant's editable tracking fields (matched by email).
 // updates uses the same field names getApplicationsView returns, e.g.
-// { missingDocuments, acceptDecline, ss, w4Forms, resignationEmailSent,
-// resignationLetters } — include only the fields you're changing.
+// { missingDocuments, acceptDecline, ss, w4Forms } — include only the
+// fields you're changing.
 // Director-only. Returns { success: true, message } or { success:
 // false, error }. Throws (with err.name === 'AbortError' on timeout)
 // on network failure.
