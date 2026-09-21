@@ -7,6 +7,19 @@
   gap: 12px;
 }
 
+// Only rendered when ENVIRONMENT (src/config.js) isn't 'production' —
+// a plain-prod deploy never shows this at all.
+.env-badge {
+  background: vars.$color-warning-bg;
+  color: vars.$color-warning-text;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
 // Also reused, unmodified, by the director dashboard's mode tabs/log-out
 // button (DirectorDashboard.scss) and the generate-codes button
 // (GenerateCodesButton.scss) — both import this file for it.

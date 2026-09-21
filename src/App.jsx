@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AttendanceForm from './components/AttendanceForm/AttendanceForm.jsx';
 import DirectorDashboard from './components/DirectorDashboard/DirectorDashboard.jsx';
 import useNames from './hooks/useNames.js';
+import { ENVIRONMENT } from './config.js';
 import './App.scss';
 
 // The name roster is fetched ONCE here and passed down to whichever
@@ -13,6 +14,7 @@ export default function App() {
 
   return (
     <div className="app">
+      {ENVIRONMENT !== 'production' && <div className="env-badge">{ENVIRONMENT}</div>}
       <nav className="tabs">
         <button
           type="button"
