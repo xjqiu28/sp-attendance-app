@@ -1,0 +1,21 @@
+@use '@/styles/variables' as vars;
+
+.edit-entry-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+
+  button {
+    width: auto;
+    margin-top: 0;
+  }
+}
+
+.edit-entry-clear {
+  background: vars.$color-neutral-bg;
+  color: vars.$color-text-secondary;
+
+  &:hover:not(:disabled) {
+    background: vars.$color-border-light;
+  }
+}

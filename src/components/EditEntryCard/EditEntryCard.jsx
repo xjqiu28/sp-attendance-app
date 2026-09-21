@@ -3,6 +3,7 @@ import StatusMessage from '../StatusMessage/StatusMessage.jsx';
 import { toTimeInputValue } from '../../utils/dateTimeFormat.js';
 import '../AttendanceCard/AttendanceCard.scss'; // .attendance-card base look
 import '../LoginCard/LoginCard.scss'; // label/input/button base styles
+import './EditEntryCard.scss';
 
 // One person's editable sign-in/sign-out for whichever date EditDayView
 // currently has selected. Local draft state only — nothing is sent
@@ -24,6 +25,26 @@ export default function EditEntryCard({ entry, onSave, viewMode }) {
 
     if (result.success) {
       setStatus({ text: 'Saved.', type: 'success' });
+    } else {
+      setStatus({ text: result.error, type: 'error' });
+    }
+
+    setSaving(false);
+  }
+
+  // Both times blank clears the entry (see updateAttendanceEntry,
+  // EditDay.gs) — this sets the fields and saves in one click instead
+  // of making a director clear each time input by hand first.
+  async function handleClear() {
+    setSaving(true);
+    setStatus({ text: 'Clearing...', type: '' });
+
+    const result = await onSave(entry.name, '', '');
+
+    if (result.success) {
+      setSignIn('');
+      setSignOut('');
+      setStatus({ text: 'Cleared.', type: 'success' });
     } else {
       setStatus({ text: result.error, type: 'error' });
     }
@@ -59,9 +80,20 @@ export default function EditEntryCard({ entry, onSave, viewMode }) {
         </div>
       </div>
 
-      <button type="button" onClick={handleSave} disabled={saving}>
-        {saving ? 'Saving...' : 'Save'}
-      </button>
+      <div className="edit-entry-actions">
+        <button type="button" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+
+        <button
+          type="button"
+          className="edit-entry-clear"
+          onClick={handleClear}
+          disabled={saving || (!signIn && !signOut)}
+        >
+          Clear
+        </button>
+      </div>
 
       <StatusMessage text={status?.text} type={status?.type} />
     </div>
