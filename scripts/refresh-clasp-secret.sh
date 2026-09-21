@@ -15,6 +15,13 @@ set -euo pipefail
 # Usage:
 #   ./scripts/refresh-clasp-secret.sh
 #   CLASP_CREDS_PATH=~/path/to/credentials.json ./scripts/refresh-clasp-secret.sh
+#
+# If this checkout has more than one GitHub remote (e.g. prod + dev
+# repos), `gh secret set` below resolves the target repo the same way
+# `gh` always does — usually the `origin` remote — which is easy to
+# get wrong when you actually meant to refresh a different repo's
+# secret. Pin it explicitly with GH_REPO, e.g.:
+#   GH_REPO=your-org/your-dev-repo ./scripts/refresh-clasp-secret.sh
 
 if ! command -v gh &> /dev/null; then
   echo "GitHub CLI (gh) is required. Install it, then run 'gh auth login', and try again." >&2
@@ -29,14 +36,19 @@ fi
 # clasp saves credentials to a project-local .clasprc.json when --creds
 # is used, but to the global ~/.clasprc.json otherwise — read back
 # whichever one it actually wrote, not always the global one.
-creds_args=()
+#
+# Branching on the flag instead of building an args array and expanding
+# it with "${creds_args[@]}": macOS ships bash 3.2 (last GPLv2 release,
+# frozen there for licensing reasons), and under `set -u` bash < 4.4
+# treats expanding an EMPTY array as an unbound-variable error even
+# though it's declared — this sidesteps that entirely.
 clasprc_path=~/.clasprc.json
 if [ -n "${CLASP_CREDS_PATH:-}" ]; then
-  creds_args=(--creds "$CLASP_CREDS_PATH")
   clasprc_path="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.clasprc.json"
+  npx clasp login --creds "$CLASP_CREDS_PATH"
+else
+  npx clasp login
 fi
-
-npx clasp login "${creds_args[@]}"
 
 # The workflow always places this content at the GLOBAL ~/.clasprc.json
 # path in CI, regardless of where clasp wrote it here. A file clasp
