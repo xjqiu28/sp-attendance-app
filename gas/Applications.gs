@@ -11,11 +11,17 @@
  */
 
 function getApplicationsSpreadsheet() {
-  if (!APPLICATIONS_SHEET_ID || APPLICATIONS_SHEET_ID === 'PASTE_YOUR_APPLICATIONS_SHEET_ID_HERE') {
-    throw new Error('Set APPLICATIONS_SHEET_ID in Config.gs to the Applications spreadsheet\'s ID first.');
+  const sheetId = PropertiesService.getScriptProperties().getProperty('APPLICATIONS_SHEET_ID');
+
+  if (!sheetId) {
+    throw new Error(
+      'Set an "APPLICATIONS_SHEET_ID" script property (Project Settings > Script Properties in the ' +
+        'Apps Script editor) to the Applications spreadsheet\'s ID first. Kept out of source so the ID ' +
+        'never lands in git — each deployment (prod/dev) sets its own value there.'
+    );
   }
 
-  return SpreadsheetApp.openById(APPLICATIONS_SHEET_ID);
+  return SpreadsheetApp.openById(sheetId);
 }
 
 /**

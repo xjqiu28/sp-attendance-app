@@ -61,8 +61,10 @@ const SCHEDULED_SIGN_OUT_HEADER = 'Scheduled Sign Out';
 // so the code always finds the right one with no manual config change
 // needed year to year.
 //
-const APPLICATIONS_SHEET_ID = '1ZwUq2YM-gRl2j__O7lbAC1eIdpD5CXskzh5zbG6JxBA';
-
+// The spreadsheet's own ID is deliberately NOT here — it's read from a
+// script property instead (see getApplicationsSpreadsheet, Applications.gs)
+// so it never lands in git and each deployment (prod/dev) can point at
+// its own sheet independently.
 const APPLICATIONS_TAB_SUFFIX = 'Applications';
 
 // Column headers on that sheet, exactly as they appear there.
