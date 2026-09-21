@@ -133,7 +133,8 @@ function getApplicationsView(submittedName, submittedPersonalCode) {
 
   const applications = rows
     .map((row) => buildApplicationEntry(columnIndexes, row))
-    .filter((entry) => entry.firstName || entry.lastName);
+    .filter((entry) => entry.firstName || entry.lastName)
+    .sort((a, b) => a.firstName.localeCompare(b.firstName));
 
   return { success: true, tabName: sheet.getName(), applications: applications };
 }

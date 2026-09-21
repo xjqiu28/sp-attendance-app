@@ -10,9 +10,10 @@ const ACCEPT_DECLINE_BADGE_CLASS = {
 };
 
 export default function ApplicationCard({ entry, onSave, viewMode }) {
-  // Collapsed by default — that's a lot of fields to scan through for
-  // every row, especially in list view, so only the name and status
-  // badges show until a director clicks to expand one.
+  // Only the editable/save section collapses by default — that's a
+  // lot of fields to scan through for every row, especially in list
+  // view. The read-only summary (title, date, time, etc.) always
+  // shows, since directors need it visible without an extra click.
   const [expanded, setExpanded] = useState(false);
   const [fields, setFields] = useState({
     missingDocuments: entry.missingDocuments,
@@ -74,92 +75,90 @@ export default function ApplicationCard({ entry, onSave, viewMode }) {
         </div>
       </div>
 
+      <div className="attendance-card-fields">
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Title</span>
+          <span>{entry.title || '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Date</span>
+          <span>{entry.dateInformation || '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Time</span>
+          <span>{entry.time || '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Rate</span>
+          <span>{entry.rate !== null ? `$${entry.rate.toFixed(2)}/hr` : '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Paid Hours</span>
+          <span>{entry.paidHours || '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Volunteer Hours</span>
+          <span>{entry.volunteerHours || '—'}</span>
+        </div>
+        <div className="attendance-card-row">
+          <span className="attendance-card-label">Email</span>
+          <span>{entry.email || '—'}</span>
+        </div>
+      </div>
+
       {expanded && (
-        <>
-          <div className="attendance-card-fields">
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Title</span>
-              <span>{entry.title || '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Date</span>
-              <span>{entry.dateInformation || '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Time</span>
-              <span>{entry.time || '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Rate</span>
-              <span>{entry.rate !== null ? `$${entry.rate.toFixed(2)}/hr` : '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Paid Hours</span>
-              <span>{entry.paidHours || '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Volunteer Hours</span>
-              <span>{entry.volunteerHours || '—'}</span>
-            </div>
-            <div className="attendance-card-row">
-              <span className="attendance-card-label">Email</span>
-              <span>{entry.email || '—'}</span>
-            </div>
+        <div className="application-card-editable">
+          <div className="application-card-field">
+            <label htmlFor={`${fieldId}-missing`}>Missing Documents</label>
+            <textarea
+              id={`${fieldId}-missing`}
+              rows={2}
+              value={fields.missingDocuments}
+              onChange={(event) => updateField('missingDocuments', event.target.value)}
+            />
           </div>
 
-          <div className="application-card-editable">
+          <div className="application-card-field">
+            <label htmlFor={`${fieldId}-accept`}>Accept/Decline</label>
+            <select
+              id={`${fieldId}-accept`}
+              value={fields.acceptDecline}
+              onChange={(event) => updateField('acceptDecline', event.target.value)}
+            >
+              <option value="">—</option>
+              <option value="Accept">Accept</option>
+              <option value="Decline">Decline</option>
+            </select>
+          </div>
+
+          <div className="application-card-editable-row">
             <div className="application-card-field">
-              <label htmlFor={`${fieldId}-missing`}>Missing Documents</label>
-              <textarea
-                id={`${fieldId}-missing`}
-                rows={2}
-                value={fields.missingDocuments}
-                onChange={(event) => updateField('missingDocuments', event.target.value)}
+              <label htmlFor={`${fieldId}-ss`}>SS</label>
+              <input
+                type="text"
+                id={`${fieldId}-ss`}
+                value={fields.ss}
+                onChange={(event) => updateField('ss', event.target.value)}
               />
             </div>
 
             <div className="application-card-field">
-              <label htmlFor={`${fieldId}-accept`}>Accept/Decline</label>
-              <select
-                id={`${fieldId}-accept`}
-                value={fields.acceptDecline}
-                onChange={(event) => updateField('acceptDecline', event.target.value)}
-              >
-                <option value="">—</option>
-                <option value="Accept">Accept</option>
-                <option value="Decline">Decline</option>
-              </select>
+              <label htmlFor={`${fieldId}-w4`}>W-4 Forms</label>
+              <input
+                type="text"
+                id={`${fieldId}-w4`}
+                value={fields.w4Forms}
+                onChange={(event) => updateField('w4Forms', event.target.value)}
+              />
             </div>
-
-            <div className="application-card-editable-row">
-              <div className="application-card-field">
-                <label htmlFor={`${fieldId}-ss`}>SS</label>
-                <input
-                  type="text"
-                  id={`${fieldId}-ss`}
-                  value={fields.ss}
-                  onChange={(event) => updateField('ss', event.target.value)}
-                />
-              </div>
-
-              <div className="application-card-field">
-                <label htmlFor={`${fieldId}-w4`}>W-4 Forms</label>
-                <input
-                  type="text"
-                  id={`${fieldId}-w4`}
-                  value={fields.w4Forms}
-                  onChange={(event) => updateField('w4Forms', event.target.value)}
-                />
-              </div>
-            </div>
-
-            <button type="button" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-
-            <StatusMessage text={status?.text} type={status?.type} />
           </div>
-        </>
+
+          <button type="button" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+
+          <StatusMessage text={status?.text} type={status?.type} />
+        </div>
       )}
     </div>
   );
