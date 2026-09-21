@@ -1,4 +1,3 @@
-import logo from '@/assets/oikos-logo.png';
 import { ENVIRONMENT } from '@/config.js';
 import './Sidebar.scss';
 
@@ -11,11 +10,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <img src={logo} alt="Oikos Community Corporation" className="sidebar-logo" />
-        <div className="sidebar-brand-text">
-          <span className="sidebar-title">Oikos Community Corporation</span>
-          <span className="sidebar-subtitle">Attendance</span>
-        </div>
+        <span className="sidebar-title">Attendance</span>
       </div>
 
       <nav className="sidebar-nav">
