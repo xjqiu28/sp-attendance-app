@@ -1,23 +1,42 @@
 @use '@/styles/variables' as vars;
 
-.app {
+// Sidebar (desktop) + content side by side; header+tabs (mobile) stack
+// above content instead — see the matching breakpoint on .sidebar
+// (Sidebar.scss) and .app-mobile-header below.
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  @media (min-width: 720px) {
+    flex-direction: row;
+  }
+}
+
+// Sidebar takes over navigation at the row breakpoint above.
+.app-mobile-header {
+  @media (min-width: 720px) {
+    display: none;
+  }
+}
+
+.app-mobile-tabs {
+  margin: 12px auto 0;
+}
+
+// The page-level content area — top-anchored (not vertically centered
+// like a lone dialog) so it reads as a normal app page that can
+// grow/scroll instead of a floating card, and shrinks to fit next to
+// the sidebar instead of overflowing it.
+.app-main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-}
-
-// Only rendered when ENVIRONMENT (src/config.js) isn't 'production' —
-// a plain-prod deploy never shows this at all.
-.env-badge {
-  background: vars.$color-warning-bg;
-  color: vars.$color-warning-text;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 3px 10px;
-  border-radius: 999px;
+  gap: 16px;
+  box-sizing: border-box;
+  padding: 24px 16px 40px;
 }
 
 // Also reused, unmodified, by the director dashboard's mode tabs/log-out
@@ -45,6 +64,11 @@
   font-weight: 600;
   cursor: pointer;
   margin-top: 0;
+  transition: background-color 0.15s ease;
+
+  &:hover:not(.active) {
+    background: rgba(0, 0, 0, 0.04);
+  }
 
   &.active {
     background: vars.$color-surface;

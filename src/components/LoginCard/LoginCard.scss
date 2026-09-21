@@ -58,6 +58,11 @@ button {
   font-weight: 600;
   background: vars.$color-primary;
   color: vars.$color-surface;
+  transition: background-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: vars.$color-primary-dark;
+  }
 
   &:disabled {
     opacity: 0.6;

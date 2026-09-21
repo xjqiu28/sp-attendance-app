@@ -1,0 +1,52 @@
+@use '@/styles/variables' as vars;
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  background: vars.$color-surface;
+  box-shadow: vars.$shadow-card;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-header-logo {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+.app-header-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.app-header-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: vars.$color-text;
+}
+
+.app-header-subtitle {
+  font-size: 12px;
+  color: vars.$color-text-muted;
+}
+
+// Only rendered when ENVIRONMENT (src/config.js) isn't 'production' —
+// a plain-prod deploy never shows this at all.
+.env-badge {
+  margin-left: auto;
+  background: vars.$color-warning-bg;
+  color: vars.$color-warning-text;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
