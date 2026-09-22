@@ -20,16 +20,18 @@ export async function fetchNames() {
   return result.names || [];
 }
 
-// Returns { success: true, message } or { success: false, error }.
-// Throws (with err.name === 'AbortError' on timeout) on network failure.
-export async function submitAttendance(name, code) {
+// direction is 'in' or 'out' — which button was pressed. Returns
+// { success: true, message } or { success: false, error } (e.g. Sign
+// In while already signed in). Throws (with err.name === 'AbortError'
+// on timeout) on network failure.
+export async function submitAttendance(name, code, direction) {
   const response = await fetchWithTimeout(WEB_APP_URL, {
     method: 'POST',
     // Content-Type text/plain avoids a CORS preflight request, which
     // Apps Script web apps don't handle. The script still parses the
     // body as JSON on its end.
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ name, code }),
+    body: JSON.stringify({ name, code, direction }),
   });
 
   return response.json();

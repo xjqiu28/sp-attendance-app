@@ -11,6 +11,11 @@ export default function AttendanceForm({ names, namesLoading, namesLoadFailed })
   async function handleSubmit(event) {
     event.preventDefault();
 
+    // Which button was pressed. Pressing Enter in the code field
+    // submits with the first one (Sign In) — harmless, since the
+    // backend rejects a Sign In while already signed in.
+    const direction = event.nativeEvent.submitter?.value === 'out' ? 'out' : 'in';
+
     const trimmedCode = code.trim();
 
     if (!selectedName || !trimmedCode) {
@@ -22,7 +27,7 @@ export default function AttendanceForm({ names, namesLoading, namesLoadFailed })
     setStatus({ text: 'Checking...', type: '' });
 
     try {
-      const result = await submitAttendance(selectedName, trimmedCode);
+      const result = await submitAttendance(selectedName, trimmedCode, direction);
 
       if (result.success) {
         setStatus({ text: result.message, type: 'success' });
@@ -47,7 +52,7 @@ export default function AttendanceForm({ names, namesLoading, namesLoadFailed })
   return (
     <LoginCard
       title="Attendance"
-      subtitle="Select your name and enter your personal code — sign-in or sign-out is detected automatically."
+      subtitle="Select your name, enter your personal code, then press Sign In or Sign Out."
       names={names}
       namesLoading={namesLoading}
       namesLoadFailed={namesLoadFailed}
@@ -57,7 +62,10 @@ export default function AttendanceForm({ names, namesLoading, namesLoadFailed })
       onCodeChange={setCode}
       onSubmit={handleSubmit}
       submitting={submitting}
-      submitLabel="Submit"
+      submitButtons={[
+        { label: 'Sign In', value: 'in' },
+        { label: 'Sign Out', value: 'out' },
+      ]}
       status={status}
     />
   );

@@ -206,7 +206,7 @@ function doPost(e) {
     } else if (action === 'generateCodes') {
       output = generatePersonalCodesFromBirthdays(submittedName, submittedPersonalCode);
     } else {
-      output = processAttendanceSubmission(submittedName, submittedPersonalCode);
+      output = processAttendanceSubmission(submittedName, submittedPersonalCode, data.direction);
     }
   } catch (error) {
     output = { success: false, error: 'Server error: ' + error.message };

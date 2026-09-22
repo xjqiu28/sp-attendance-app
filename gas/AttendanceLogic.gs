@@ -11,8 +11,13 @@
  * Same matching + attendance logic as myFunction, minus the
  * "temporary form row" handling — nothing is written unless the
  * code is verified.
+ *
+ * direction is 'in' or 'out' — which button the person pressed (see
+ * recordDirectedAttendanceEntry). Anything else (an older cached copy
+ * of the site that only had one button) falls back to alternating
+ * sign-in/sign-out, like the legacy Google Form flow.
  */
-function processAttendanceSubmission(submittedName, submittedPersonalCode) {
+function processAttendanceSubmission(submittedName, submittedPersonalCode, direction) {
   const sheet = getAttendanceSheet();
 
   let columnIndexes = getColumnIndexes(sheet);
@@ -50,6 +55,10 @@ function processAttendanceSubmission(submittedName, submittedPersonalCode) {
   }
 
   const personRowNumber = person.row;
+
+  if (direction === 'in' || direction === 'out') {
+    return processDirectedSubmission(sheet, columnIndexes, person, todayColumnIndex, currentTime, direction);
+  }
 
   const yesterdayDate = getPreviousDate(currentTime);
   const yesterdayColumnIndex = columnIndexes[yesterdayDate];
@@ -95,6 +104,123 @@ function processAttendanceSubmission(submittedName, submittedPersonalCode) {
     return { success: true, message: `${person.name}, you have been signed out.` };
   }
   return { success: false, error: `${person.name}, today's attendance entry couldn't be read. Please contact the admin.` };
+}
+
+/**
+ * Handles a press of the explicit Sign In or Sign Out button. Unlike
+ * the alternating flow, a press that doesn't match the person's
+ * current state is rejected instead of recorded — so someone who
+ * forgot to sign out when stepping out can't have their "I'm back"
+ * press silently recorded as a sign-out (which would count the time
+ * away as worked).
+ *
+ * Sign Out with nothing yet today but an open sign-in from yesterday
+ * signs out of yesterday, same as the alternating flow. Sign In with
+ * an open sign-in from yesterday just signs in for today and tells
+ * the person to have a director fix yesterday.
+ */
+function processDirectedSubmission(sheet, columnIndexes, person, todayColumnIndex, currentTime, direction) {
+  const attendanceCell = sheet.getRange(person.row, todayColumnIndex + 1);
+  const cellValue = attendanceCell.getValue();
+  let sessions = null;
+
+  if (cellValue !== '' && cellValue !== null) {
+    const attendanceData = parseAttendanceData(cellValue, person.row);
+
+    if (!attendanceData || !attendanceData['sign in time']) {
+      return {
+        success: false,
+        error: `${person.name}, today's attendance entry couldn't be read. Please contact the admin.`,
+      };
+    }
+
+    sessions = getAttendanceSessions(attendanceData);
+  }
+
+  const lastSession = sessions ? sessions[sessions.length - 1] : null;
+  const isSignedIn = Boolean(lastSession && !lastSession['sign out time']);
+
+  const yesterdayDate = getPreviousDate(currentTime);
+  const yesterdayColumnIndex = columnIndexes[yesterdayDate];
+  let yesterdayCell = null;
+  let yesterdayData = null;
+
+  if (!sessions && yesterdayColumnIndex !== undefined) {
+    yesterdayCell = sheet.getRange(person.row, yesterdayColumnIndex + 1);
+    const yesterdayValue = yesterdayCell.getValue();
+
+    if (yesterdayValue !== '' && yesterdayValue !== null) {
+      const parsed = parseAttendanceData(yesterdayValue, person.row);
+
+      if (parsed && parsed['sign in time'] && !parsed['sign out time']) {
+        yesterdayData = parsed;
+      }
+    }
+  }
+
+  if (direction === 'in') {
+    if (isSignedIn) {
+      return {
+        success: false,
+        error: `${person.name}, you're already signed in (since ${formatTimeOfDayText(
+          lastSession['sign in time']
+        )}). Press Sign Out when you leave.`,
+      };
+    }
+
+    const signInTime = formatDateTime(currentTime);
+
+    if (sessions) {
+      sessions.push({ 'sign in time': signInTime });
+    } else {
+      sessions = [{ 'sign in time': signInTime }];
+    }
+
+    writeAttendanceSessions(attendanceCell, sessions, person.signInSchedule);
+
+    let message =
+      sessions.length > 1
+        ? `${person.name}, welcome back — you have been signed in again.`
+        : `${person.name}, you have been signed in.`;
+
+    if (yesterdayData) {
+      message += ` Note: you never signed out on ${yesterdayDate} — please let a director know.`;
+    }
+
+    return { success: true, message: message };
+  }
+
+  if (isSignedIn) {
+    lastSession['sign out time'] = formatDateTime(currentTime);
+    writeAttendanceSessions(attendanceCell, sessions, person.signInSchedule);
+    return { success: true, message: `${person.name}, you have been signed out.` };
+  }
+
+  if (yesterdayData) {
+    recordPreviousDaySignOut(person.row, yesterdayCell, yesterdayData, currentTime, person.signInSchedule);
+    return {
+      success: true,
+      message: `${person.name}, you were signed out for yesterday (${yesterdayDate}).`,
+    };
+  }
+
+  if (!lastSession) {
+    return { success: false, error: `${person.name}, you haven't signed in today. Press Sign In first.` };
+  }
+
+  return {
+    success: false,
+    error: `${person.name}, you already signed out at ${formatTimeOfDayText(
+      lastSession['sign out time']
+    )}. If you came back, press Sign In.`,
+  };
+}
+
+/**
+ * "M/d/yyyy h:mm:ss a" -> just "h:mm AM/PM", for messages.
+ */
+function formatTimeOfDayText(dateTimeText) {
+  return Utilities.formatDate(parseFormattedDateTime(dateTimeText), Session.getScriptTimeZone(), 'h:mm a');
 }
 
 /**

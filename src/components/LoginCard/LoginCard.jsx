@@ -17,6 +17,7 @@ export default function LoginCard({
   onSubmit,
   submitting,
   submitLabel,
+  submitButtons,
   status,
 }) {
   return (
@@ -35,9 +36,21 @@ export default function LoginCard({
           onCodeChange={onCodeChange}
         />
 
-        <button type="submit" disabled={submitting}>
-          {submitLabel}
-        </button>
+        {submitButtons ? (
+          // Several submit buttons side by side — the form's onSubmit
+          // reads which one was pressed from event.nativeEvent.submitter.
+          <div className="login-card-buttons">
+            {submitButtons.map((button) => (
+              <button key={button.value} type="submit" name="action" value={button.value} disabled={submitting}>
+                {button.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button type="submit" disabled={submitting}>
+            {submitLabel}
+          </button>
+        )}
       </form>
 
       {namesLoadFailed && !status ? (
