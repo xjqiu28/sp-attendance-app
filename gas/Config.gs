@@ -56,6 +56,12 @@ const SCHEDULED_SIGN_OUT_HEADER = 'Scheduled Sign Out';
 // above.
 const WORK_HOURS_HEADER = 'Work Hours';
 
+// How many minutes after their Work Hours start someone can sign in
+// before getting an "Arrived late" note — 10 means 10:10 for a 10:00
+// start gets no note, 10:11 does. The other notes (arrived early, left
+// early, stayed late) have no grace period.
+const WORK_HOURS_LATE_GRACE_MINUTES = 10;
+
 // ===================================================================
 // APPLICATIONS (see Applications.gs)
 // ===================================================================

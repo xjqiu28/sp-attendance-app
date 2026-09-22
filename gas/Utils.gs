@@ -184,7 +184,8 @@ function parseClockTime(text) {
 /**
  * Compares a day's first sign-in and last sign-out against someone's
  * Work Hours (from parseWorkHours) and returns a note for each that
- * differs by at least a minute, e.g. { type: 'arrived-late', text:
+ * differs by at least a minute (more than WORK_HOURS_LATE_GRACE_MINUTES
+ * for arriving late), e.g. { type: 'arrived-late', text:
  * 'Arrived 15 minutes late' }. Types: 'arrived-early' | 'arrived-late'
  * | 'left-early' | 'stayed-late'. Time stepped out mid-day isn't
  * compared — only when the day started and ended.
@@ -212,7 +213,7 @@ function getWorkHoursNotes(signInTime, signOutTime, workHours) {
 
     if (difference < 0) {
       notes.push({ type: 'arrived-early', text: `Arrived ${formatMinutes(-difference)} early` });
-    } else if (difference > 0) {
+    } else if (difference > WORK_HOURS_LATE_GRACE_MINUTES) {
       notes.push({ type: 'arrived-late', text: `Arrived ${formatMinutes(difference)} late` });
     }
   }
