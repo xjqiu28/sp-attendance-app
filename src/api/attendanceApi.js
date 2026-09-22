@@ -39,12 +39,14 @@ export async function submitAttendance(name, code, direction) {
 
 // Daily: returns { success: true, date, entries: [{ name, signInTime,
 // signOutTime, totalHoursDecimal, totalHoursFormatted, status, isLate,
-// lateBy: { hours, minutes, formatted } | null }], totalRoster,
+// lateBy: { hours, minutes, formatted } | null, workHours,
+// workHoursNotes: [{ type, text }] }], totalRoster,
 // totalSignedIn, absentNames, lateNames: [{ name, lateBy }].
 // Weekly: returns { success: true, weekNumber, weekStart, weekEnd,
 // availableWeeks: [{ weekNumber, weekStart, weekEnd, label }], entries:
 // [{ name, weekTotalHours, weekTotalFormatted, days, maxWeeklyHours,
-// overCap, approval: { approvedBy, approvedAt } | null }] }. Pass weekNumber
+// overCap, approval: { approvedBy, approvedAt } | null, workHours }] },
+// where each day also carries workHoursNotes: [{ type, text }]. Pass weekNumber
 // to view a specific week (from availableWeeks); omitted, it defaults to
 // the most recent week. Either way, or { success: false, error } on
 // rejection. Read-only — never writes to the sheet. Throws (with

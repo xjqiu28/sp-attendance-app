@@ -144,6 +144,93 @@ function parseTimeOfDay(text) {
 }
 
 /**
+ * Parses a Work Hours cell (WORK_HOURS_HEADER) like "10AM - 3PM",
+ * "3:00PM - 4:30PM", or "07:30AM - 06:15PM" into { start, end }, each
+ * { hour, minute } (24-hour). Minutes and the space before AM/PM are
+ * optional; "-", "–", "—", or "to" separate the two times. Returns
+ * null for a blank or unrecognized cell — callers skip the notes.
+ */
+function parseWorkHours(text) {
+  const parts = String(text)
+    .trim()
+    .split(/\s*(?:-|–|—|\bto\b)\s*/i);
+
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const start = parseClockTime(parts[0]);
+  const end = parseClockTime(parts[1]);
+
+  return start && end ? { start: start, end: end } : null;
+}
+
+/**
+ * Like parseTimeOfDay, but also accepts a time without minutes
+ * ("10AM") — people type Work Hours by hand.
+ */
+function parseClockTime(text) {
+  const match = String(text)
+    .trim()
+    .match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return parseTimeOfDay(`${match[1]}:${match[2] || '00'} ${match[3]}`);
+}
+
+/**
+ * Compares a day's first sign-in and last sign-out against someone's
+ * Work Hours (from parseWorkHours) and returns a note for each that
+ * differs by at least a minute, e.g. { type: 'arrived-late', text:
+ * 'Arrived 15 minutes late' }. Types: 'arrived-early' | 'arrived-late'
+ * | 'left-early' | 'stayed-late'. Time stepped out mid-day isn't
+ * compared — only when the day started and ended.
+ */
+function getWorkHoursNotes(signInTime, signOutTime, workHours) {
+  const notes = [];
+
+  if (!workHours) {
+    return notes;
+  }
+
+  function minutesFromSchedule(dateTimeText, schedule) {
+    const actual = parseFormattedDateTime(dateTimeText);
+    const expected = new Date(actual);
+    expected.setHours(schedule.hour, schedule.minute, 0, 0);
+    return Math.round((actual.getTime() - expected.getTime()) / (1000 * 60));
+  }
+
+  function formatMinutes(totalMinutes) {
+    return formatLateDuration(Math.floor(totalMinutes / 60), totalMinutes % 60);
+  }
+
+  if (signInTime) {
+    const difference = minutesFromSchedule(signInTime, workHours.start);
+
+    if (difference < 0) {
+      notes.push({ type: 'arrived-early', text: `Arrived ${formatMinutes(-difference)} early` });
+    } else if (difference > 0) {
+      notes.push({ type: 'arrived-late', text: `Arrived ${formatMinutes(difference)} late` });
+    }
+  }
+
+  if (signOutTime) {
+    const difference = minutesFromSchedule(signOutTime, workHours.end);
+
+    if (difference < 0) {
+      notes.push({ type: 'left-early', text: `Left ${formatMinutes(-difference)} early` });
+    } else if (difference > 0) {
+      notes.push({ type: 'stayed-late', text: `Stayed ${formatMinutes(difference)} late` });
+    }
+  }
+
+  return notes;
+}
+
+/**
  * Checks whether a sign-in occurred after its cutoff. Pass a specific
  * person's own { hour, minute } schedule (see SCHEDULED_SIGN_IN_HEADER)
  * to use that instead of the SIGN_IN_CUTOFF_HOUR default — omit it (or

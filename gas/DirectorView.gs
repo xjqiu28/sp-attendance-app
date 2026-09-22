@@ -93,6 +93,7 @@ function getDirectorAttendanceView(submittedName, submittedPersonalCode, request
 function buildDirectorAttendanceResult(columnIndexes, dataRows) {
   const nameColumnIndex = columnIndexes.Name;
   const scheduledSignInColumnIndex = columnIndexes[SCHEDULED_SIGN_IN_HEADER];
+  const workHoursColumnIndex = columnIndexes[WORK_HOURS_HEADER];
   const dateToday = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'M/d/yyyy');
   const todayColumnIndex = columnIndexes[dateToday];
 
@@ -111,6 +112,8 @@ function buildDirectorAttendanceResult(columnIndexes, dataRows) {
     let totalHoursFormatted = null;
     let isLate = false;
     let lateBy = null;
+
+    const workHoursText = workHoursColumnIndex !== undefined ? String(row[workHoursColumnIndex]).trim() : '';
 
     if (todayColumnIndex !== undefined) {
       const cellValue = row[todayColumnIndex];
@@ -159,6 +162,8 @@ function buildDirectorAttendanceResult(columnIndexes, dataRows) {
       status: status,
       isLate: isLate,
       lateBy: lateBy,
+      workHours: workHoursText || null,
+      workHoursNotes: getWorkHoursNotes(signInTime, signOutTime, parseWorkHours(workHoursText)),
     });
   });
 
@@ -263,6 +268,7 @@ function getAvailableWeeks(columnIndexes) {
 function buildDirectorWeeklyResult(columnIndexes, dataRows, weekNumber) {
   const nameColumnIndex = columnIndexes.Name;
   const maxWeeklyHoursColumnIndex = columnIndexes[MAX_WEEKLY_HOURS_HEADER];
+  const workHoursColumnIndex = columnIndexes[WORK_HOURS_HEADER];
   const availableWeeks = getAvailableWeeks(columnIndexes);
   const approvals = getWeekApprovals();
 
@@ -292,6 +298,9 @@ function buildDirectorWeeklyResult(columnIndexes, dataRows, weekNumber) {
     }
 
     let weekTotalHours = 0;
+
+    const workHoursText = workHoursColumnIndex !== undefined ? String(row[workHoursColumnIndex]).trim() : '';
+    const workHours = parseWorkHours(workHoursText);
 
     const days = weekDates.map((date) => {
       const dateString = Utilities.formatDate(date, timeZone, 'M/d/yyyy');
@@ -325,6 +334,7 @@ function buildDirectorWeeklyResult(columnIndexes, dataRows, weekNumber) {
         signInTime: signInTime,
         signOutTime: signOutTime,
         hoursFormatted: hoursFormatted,
+        workHoursNotes: getWorkHoursNotes(signInTime, signOutTime, workHours),
       };
     });
 
@@ -343,6 +353,7 @@ function buildDirectorWeeklyResult(columnIndexes, dataRows, weekNumber) {
       name: name,
       weekTotalHours: roundedTotal,
       weekTotalFormatted: `${wholeHours} hours and ${remainderMinutes} minutes`,
+      workHours: workHoursText || null,
       days: days,
       maxWeeklyHours: maxWeeklyHours,
       overCap: overCap,

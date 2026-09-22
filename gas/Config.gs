@@ -48,6 +48,14 @@ const TIMESHEET_REPORT_EMAIL = 'wendy@occny.org';
 const SCHEDULED_SIGN_IN_HEADER = 'Scheduled Sign In';
 const SCHEDULED_SIGN_OUT_HEADER = 'Scheduled Sign Out';
 
+// Optional roster column: the hours someone is expected to be in, as
+// free text like "10AM - 3PM" or "07:30AM - 06:15PM" (see
+// parseWorkHours, Utils.gs). Only drives the director dashboard's
+// arrived early/late and left early/stayed late notes — the Late
+// badge and auto sign-out still use the Scheduled Sign In/Out columns
+// above.
+const WORK_HOURS_HEADER = 'Work Hours';
+
 // ===================================================================
 // APPLICATIONS (see Applications.gs)
 // ===================================================================

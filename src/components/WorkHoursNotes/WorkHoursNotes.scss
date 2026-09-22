@@ -1,0 +1,26 @@
+@use '@/styles/variables' as vars;
+
+.work-hours-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.work-hours-note {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: vars.$color-neutral-bg;
+  color: vars.$color-text-secondary;
+}
+
+// Came in after or left before their Work Hours — the ones a director
+// most likely needs to follow up on.
+.work-hours-note-arrived-late,
+.work-hours-note-left-early {
+  background: vars.$color-warning-bg;
+  color: vars.$color-warning-text;
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import StatusMessage from '../StatusMessage/StatusMessage.jsx';
+import WorkHoursNotes from '../WorkHoursNotes/WorkHoursNotes.jsx';
 import { formatTimeOnly } from '../../utils/dateTimeFormat.js';
 import '@/components/AttendanceCard/AttendanceCard.scss';
 import './WeeklyTotalCard.scss';
@@ -61,6 +62,13 @@ export default function WeeklyTotalCard({ entry, viewMode, weekStart, onApprove,
       </div>
 
       <div className="attendance-card-fields">
+        {entry.workHours && (
+          <div className="attendance-card-row">
+            <span className="attendance-card-label">Work Hours</span>
+            <span>{entry.workHours}</span>
+          </div>
+        )}
+
         <div className="attendance-card-row">
           <span className="attendance-card-label">Total Hours</span>
           <span className="attendance-card-total">{entry.weekTotalFormatted}</span>
@@ -106,6 +114,7 @@ export default function WeeklyTotalCard({ entry, viewMode, weekStart, onApprove,
               </div>
 
               {day.hoursFormatted && <div className="weekly-breakdown-hours">{day.hoursFormatted}</div>}
+              <WorkHoursNotes notes={day.workHoursNotes} />
             </div>
           ))}
         </div>

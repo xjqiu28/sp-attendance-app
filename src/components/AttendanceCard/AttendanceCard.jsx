@@ -1,3 +1,4 @@
+import WorkHoursNotes from '../WorkHoursNotes/WorkHoursNotes.jsx';
 import './AttendanceCard.scss';
 
 const STATUS_CLASS = {
@@ -18,6 +19,13 @@ export default function AttendanceCard({ entry, viewMode }) {
       </div>
 
       <div className="attendance-card-fields">
+        {entry.workHours && (
+          <div className="attendance-card-row">
+            <span className="attendance-card-label">Work Hours</span>
+            <span>{entry.workHours}</span>
+          </div>
+        )}
+
         <div className="attendance-card-row">
           <span className="attendance-card-label">Sign In</span>
           <span>{entry.signInTime || '—'}</span>
@@ -33,6 +41,8 @@ export default function AttendanceCard({ entry, viewMode }) {
           <span>{entry.totalHoursFormatted || '—'}</span>
         </div>
       </div>
+
+      <WorkHoursNotes notes={entry.workHoursNotes} />
     </div>
   );
 }
