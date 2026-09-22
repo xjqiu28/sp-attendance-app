@@ -15,9 +15,11 @@ const SHEET_NAME = 'Form Responses 1';
 // summarizes the Monday-Friday work week.
 const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-// Sign-ins recorded after this hour are flagged late (red text on the
-// sheet, "Late" badge on the director dashboard, and included in the
-// dashboard's "Signed In Late" list).
+// Default start time for anyone with neither Work Hours nor a
+// Scheduled Sign In (see getSignInSchedule, Utils.gs). Signing in
+// LATE_THRESHOLD_MINUTES or more after someone's start is flagged late
+// (red text on the sheet, "Late" badge on the director dashboard, and
+// included in the dashboard's "Signed In Late" list).
 const SIGN_IN_CUTOFF_HOUR = 9;
 
 // Anyone still signed in (no sign-out yet) at this time gets
@@ -50,17 +52,18 @@ const SCHEDULED_SIGN_OUT_HEADER = 'Scheduled Sign Out';
 
 // Optional roster column: the hours someone is expected to be in, as
 // free text like "10AM - 3PM" or "07:30AM - 06:15PM" (see
-// parseWorkHours, Utils.gs). Only drives the director dashboard's
-// arrived early/late and left early/stayed late notes — the Late
-// badge and auto sign-out still use the Scheduled Sign In/Out columns
-// above.
+// parseWorkHours, Utils.gs). Drives the director dashboard's arrived
+// early/late and left early/stayed late notes, and its start time takes
+// priority over Scheduled Sign In for the late flag. Auto sign-out
+// still uses Scheduled Sign Out.
 const WORK_HOURS_HEADER = 'Work Hours';
 
-// How many minutes after their Work Hours start counts as late for the
-// "Arrived late" note — 10 means 10:09 for a 10:00 start gets no note,
-// 10:10 does. The other notes (arrived early, left early, stayed late)
-// show from 1 minute.
-const WORK_HOURS_LATE_THRESHOLD_MINUTES = 10;
+// How many minutes after someone's start time counts as late — 10
+// means 10:09 for a 10:00 start isn't late, 10:10 is. Used for the
+// Late badge, the red text on the sheet, and the "Arrived late" note
+// alike. The other notes (arrived early, left early, stayed late) show
+// from 1 minute.
+const LATE_THRESHOLD_MINUTES = 10;
 
 // ===================================================================
 // APPLICATIONS (see Applications.gs)

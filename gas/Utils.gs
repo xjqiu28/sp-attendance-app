@@ -184,8 +184,8 @@ function parseClockTime(text) {
 /**
  * Compares a day's first sign-in and last sign-out against someone's
  * Work Hours (from parseWorkHours) and returns a note for each that
- * differs by at least a minute (WORK_HOURS_LATE_THRESHOLD_MINUTES or
- * more for arriving late), e.g. { type: 'arrived-late', text:
+ * differs by at least a minute (LATE_THRESHOLD_MINUTES or more for
+ * arriving late), e.g. { type: 'arrived-late', text:
  * 'Arrived 15 minutes late' }. Types: 'arrived-early' | 'arrived-late'
  * | 'left-early' | 'stayed-late'. Time stepped out mid-day isn't
  * compared — only when the day started and ended.
@@ -213,7 +213,7 @@ function getWorkHoursNotes(signInTime, signOutTime, workHours) {
 
     if (difference < 0) {
       notes.push({ type: 'arrived-early', text: `Arrived ${formatMinutes(-difference)} early` });
-    } else if (difference >= WORK_HOURS_LATE_THRESHOLD_MINUTES) {
+    } else if (difference >= LATE_THRESHOLD_MINUTES) {
       notes.push({ type: 'arrived-late', text: `Arrived ${formatMinutes(difference)} late` });
     }
   }
@@ -232,29 +232,29 @@ function getWorkHoursNotes(signInTime, signOutTime, workHours) {
 }
 
 /**
- * Checks whether a sign-in occurred after its cutoff. Pass a specific
- * person's own { hour, minute } schedule (see SCHEDULED_SIGN_IN_HEADER)
- * to use that instead of the SIGN_IN_CUTOFF_HOUR default — omit it (or
- * pass null) for anyone without one.
+ * A person's start time for the late flag, as { hour, minute }: their
+ * Work Hours start (WORK_HOURS_HEADER) if that parses, otherwise their
+ * Scheduled Sign In (SCHEDULED_SIGN_IN_HEADER), otherwise null — which
+ * isLateSignIn/getLateDuration treat as SIGN_IN_CUTOFF_HOUR. Takes the
+ * two raw cell values.
  */
-function isLateSignIn(signInDate, scheduleOverride) {
-  const cutoff = new Date(signInDate);
+function getSignInSchedule(workHoursValue, scheduledSignInValue) {
+  const workHours = parseWorkHours(workHoursValue);
 
-  if (scheduleOverride) {
-    cutoff.setHours(scheduleOverride.hour, scheduleOverride.minute, 0, 0);
-  } else {
-    cutoff.setHours(SIGN_IN_CUTOFF_HOUR, 0, 0, 0);
+  if (workHours) {
+    return workHours.start;
   }
 
-  return signInDate > cutoff;
+  return parseTimeOfDay(scheduledSignInValue);
 }
 
 /**
- * Returns how long after the cutoff a sign-in occurred, or null if it
- * wasn't late. { hours, minutes, formatted }. Same scheduleOverride as
- * isLateSignIn.
+ * Whole minutes between a sign-in and its start time (negative if
+ * early). scheduleOverride is a person's own { hour, minute } (see
+ * getSignInSchedule) — omit it (or pass null) to use
+ * SIGN_IN_CUTOFF_HOUR.
  */
-function getLateDuration(signInDate, scheduleOverride) {
+function getMinutesAfterStart(signInDate, scheduleOverride) {
   const cutoff = new Date(signInDate);
 
   if (scheduleOverride) {
@@ -263,13 +263,29 @@ function getLateDuration(signInDate, scheduleOverride) {
     cutoff.setHours(SIGN_IN_CUTOFF_HOUR, 0, 0, 0);
   }
 
-  const millisecondsLate = signInDate.getTime() - cutoff.getTime();
+  return Math.round((signInDate.getTime() - cutoff.getTime()) / (1000 * 60));
+}
 
-  if (millisecondsLate <= 0) {
+/**
+ * Checks whether a sign-in was LATE_THRESHOLD_MINUTES or more after
+ * its start time. Same scheduleOverride as getMinutesAfterStart.
+ */
+function isLateSignIn(signInDate, scheduleOverride) {
+  return getMinutesAfterStart(signInDate, scheduleOverride) >= LATE_THRESHOLD_MINUTES;
+}
+
+/**
+ * Returns how long after the start time a sign-in occurred — measured
+ * from the start itself, not from the end of LATE_THRESHOLD_MINUTES —
+ * or null if it wasn't late. { hours, minutes, formatted }. Same
+ * scheduleOverride as isLateSignIn.
+ */
+function getLateDuration(signInDate, scheduleOverride) {
+  if (!isLateSignIn(signInDate, scheduleOverride)) {
     return null;
   }
 
-  const totalMinutesLate = Math.round(millisecondsLate / (1000 * 60));
+  const totalMinutesLate = getMinutesAfterStart(signInDate, scheduleOverride);
   const hoursLate = Math.floor(totalMinutesLate / 60);
   const minutesLate = totalMinutesLate % 60;
 

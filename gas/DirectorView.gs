@@ -131,10 +131,10 @@ function buildDirectorAttendanceResult(columnIndexes, dataRows) {
           }
 
           if (signInTime) {
-            const signInSchedule =
-              scheduledSignInColumnIndex !== undefined
-                ? parseTimeOfDay(row[scheduledSignInColumnIndex])
-                : null;
+            const signInSchedule = getSignInSchedule(
+              workHoursText,
+              scheduledSignInColumnIndex !== undefined ? row[scheduledSignInColumnIndex] : ''
+            );
             const parsedSignInTime = parseFormattedDateTime(signInTime);
             isLate = isLateSignIn(parsedSignInTime, signInSchedule);
             lateBy = isLate ? getLateDuration(parsedSignInTime, signInSchedule) : null;

@@ -228,8 +228,8 @@ function formatTimeOfDayText(dateTimeText) {
  * Returns 'signed-in' | 'signed-out' | 'signed-in-again' |
  * 'already-complete' (the last only if the cell can't be parsed).
  *
- * signInSchedule is the person's own { hour, minute } (from
- * SCHEDULED_SIGN_IN_HEADER), or null to use SIGN_IN_CUTOFF_HOUR.
+ * signInSchedule is the person's own { hour, minute } start time (see
+ * getSignInSchedule, Utils.gs), or null to use SIGN_IN_CUTOFF_HOUR.
  *
  * Submissions alternate sign-in / sign-out, so someone who steps out
  * mid-day and comes back (e.g. in 8:30am, out 11am, back 2pm, out
@@ -427,8 +427,8 @@ function applyLateSignInFormatting(attendanceCell, jsonText, signInTime) {
  *   completed day.
  * Late formatting is reapplied/removed based on the (possibly edited)
  * sign-in time, exactly as a live submission would. signInSchedule is
- * the person's own { hour, minute } (SCHEDULED_SIGN_IN_HEADER), or
- * null/omitted to use SIGN_IN_CUTOFF_HOUR.
+ * the person's own { hour, minute } start time (getSignInSchedule,
+ * Utils.gs), or null/omitted to use SIGN_IN_CUTOFF_HOUR.
  */
 function writeAttendanceCell(attendanceCell, signInTime, signOutTime, signInSchedule) {
   if (!signInTime && !signOutTime) {

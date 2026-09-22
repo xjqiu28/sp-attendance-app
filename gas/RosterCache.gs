@@ -26,13 +26,14 @@
  * string and parsed back out on read.
  */
 
-const ROSTER_CACHE_KEY = 'roster_v1';
+const ROSTER_CACHE_KEY = 'roster_v2';
 const ROSTER_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 /**
  * Returns { byLowerName: { [lowercasedName]: { name, row, personalCode,
  * isAdmin, signInSchedule, signOutSchedule } } }, where each schedule
- * is { hour, minute } or null. Rebuilt from the sheet on a cache miss,
+ * is { hour, minute } or null. signInSchedule comes from Work Hours
+ * when set, else Scheduled Sign In (see getSignInSchedule, Utils.gs). Rebuilt from the sheet on a cache miss,
  * reused as-is on a cache hit.
  */
 function getRoster(sheet, columnIndexes) {
@@ -58,6 +59,7 @@ function buildRosterFromSheet(sheet, columnIndexes) {
   const adminColumnIndex = columnIndexes.Admin;
   const scheduledSignInColumnIndex = columnIndexes[SCHEDULED_SIGN_IN_HEADER];
   const scheduledSignOutColumnIndex = columnIndexes[SCHEDULED_SIGN_OUT_HEADER];
+  const workHoursColumnIndex = columnIndexes[WORK_HOURS_HEADER];
 
   const byLowerName = {};
 
@@ -89,6 +91,10 @@ function buildRosterFromSheet(sheet, columnIndexes) {
     scheduledSignOutColumnIndex !== undefined
       ? sheet.getRange(2, scheduledSignOutColumnIndex + 1, rowCount, 1).getValues()
       : null;
+  const workHoursValues =
+    workHoursColumnIndex !== undefined
+      ? sheet.getRange(2, workHoursColumnIndex + 1, rowCount, 1).getValues()
+      : null;
 
   for (let i = 0; i < names.length; i++) {
     const name = String(names[i][0]).trim();
@@ -104,7 +110,10 @@ function buildRosterFromSheet(sheet, columnIndexes) {
       row: i + 2,
       personalCode: codes ? String(codes[i][0]).trim() : '',
       isAdmin: ['yes', 'true', 'y', '1'].indexOf(adminValue) !== -1,
-      signInSchedule: scheduledSignIns ? parseTimeOfDay(scheduledSignIns[i][0]) : null,
+      signInSchedule: getSignInSchedule(
+        workHoursValues ? workHoursValues[i][0] : '',
+        scheduledSignIns ? scheduledSignIns[i][0] : ''
+      ),
       signOutSchedule: scheduledSignOuts ? parseTimeOfDay(scheduledSignOuts[i][0]) : null,
     };
   }
