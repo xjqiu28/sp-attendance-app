@@ -97,7 +97,15 @@ function getPreviousDate(currentDate) {
  */
 function calculateTotalHours(signInDate, signOutDate) {
   const millisecondsWorked = signOutDate.getTime() - signInDate.getTime();
-  const totalMinutesWorked = Math.round(millisecondsWorked / (1000 * 60));
+  return formatMinutesWorked(Math.round(millisecondsWorked / (1000 * 60)));
+}
+
+/**
+ * Formats a whole number of minutes the same way calculateTotalHours
+ * does — used directly when summing several sign-in/sign-out sessions
+ * on the same day (see buildAttendanceData, AttendanceLogic.gs).
+ */
+function formatMinutesWorked(totalMinutesWorked) {
   const hoursWorked = Math.floor(totalMinutesWorked / 60);
   const minutesWorked = totalMinutesWorked % 60;
 

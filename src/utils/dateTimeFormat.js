@@ -64,3 +64,20 @@ export function toTimeInputValue(fullDateTimeString) {
 
   return `${String(hour).padStart(2, '0')}:${minute}`;
 }
+
+// Backend stores times as "M/d/yyyy h:mm:ss a" — pull out just the
+// "h:mm a" part for a cleaner display (e.g. "5:38 PM").
+export function formatTimeOnly(dateTimeString) {
+  if (!dateTimeString) {
+    return null;
+  }
+
+  const parts = dateTimeString.split(' ');
+
+  if (parts.length < 3) {
+    return dateTimeString;
+  }
+
+  const [hour, minute] = parts[1].split(':');
+  return `${hour}:${minute} ${parts[2]}`;
+}

@@ -41,6 +41,7 @@ function getEditDayView(submittedName, submittedPersonalCode, dateString) {
 
     let signInTime = null;
     let signOutTime = null;
+    let sessions = null;
 
     if (dateColumnIndex !== undefined) {
       const cellValue = row[dateColumnIndex];
@@ -51,11 +52,21 @@ function getEditDayView(submittedName, submittedPersonalCode, dateString) {
         if (attendanceData) {
           signInTime = attendanceData['sign in time'] || null;
           signOutTime = attendanceData['sign out time'] || null;
+
+          // Only set for a day with more than one sign-in/sign-out
+          // (someone stepped out and came back) — the two fields above
+          // then hold just the first sign-in and last sign-out.
+          if (Array.isArray(attendanceData.sessions) && attendanceData.sessions.length > 1) {
+            sessions = attendanceData.sessions.map((session) => ({
+              signInTime: session['sign in time'] || null,
+              signOutTime: session['sign out time'] || null,
+            }));
+          }
         }
       }
     }
 
-    entries.push({ name: name, signInTime: signInTime, signOutTime: signOutTime });
+    entries.push({ name: name, signInTime: signInTime, signOutTime: signOutTime, sessions: sessions });
   });
 
   entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -64,7 +75,8 @@ function getEditDayView(submittedName, submittedPersonalCode, dateString) {
 }
 
 /**
- * Overwrites one person's sign-in/sign-out for one date. Both times
+ * Overwrites one person's sign-in/sign-out for one date, replacing
+ * any separate sessions that day had with a single one. Both times
  * blank clears the entry; the date column is created first if that
  * date has never had anyone sign in (e.g. a day someone was fully
  * absent and no one else's column exists for it — rare, but possible

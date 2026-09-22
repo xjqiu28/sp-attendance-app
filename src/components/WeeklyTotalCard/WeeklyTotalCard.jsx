@@ -1,24 +1,8 @@
 import { useState } from 'react';
 import StatusMessage from '../StatusMessage/StatusMessage.jsx';
+import { formatTimeOnly } from '../../utils/dateTimeFormat.js';
 import '@/components/AttendanceCard/AttendanceCard.scss';
 import './WeeklyTotalCard.scss';
-
-// Backend stores times as "M/d/yyyy h:mm:ss a" — pull out just the
-// "h:mm a" part for a cleaner display (e.g. "5:38 PM").
-function formatTimeOnly(dateTimeString) {
-  if (!dateTimeString) {
-    return null;
-  }
-
-  const parts = dateTimeString.split(' ');
-
-  if (parts.length < 3) {
-    return dateTimeString;
-  }
-
-  const [hour, minute] = parts[1].split(':');
-  return `${hour}:${minute} ${parts[2]}`;
-}
 
 export default function WeeklyTotalCard({ entry, viewMode, weekStart, onApprove, onUnapprove }) {
   const [expanded, setExpanded] = useState(false);

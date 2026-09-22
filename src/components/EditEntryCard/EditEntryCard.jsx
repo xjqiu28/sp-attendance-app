@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import StatusMessage from '../StatusMessage/StatusMessage.jsx';
-import { toTimeInputValue } from '../../utils/dateTimeFormat.js';
+import { formatTimeOnly, toTimeInputValue } from '../../utils/dateTimeFormat.js';
 import '../AttendanceCard/AttendanceCard.scss'; // .attendance-card base look
 import '../LoginCard/LoginCard.scss'; // label/input/button base styles
 import './EditEntryCard.scss';
@@ -57,6 +57,16 @@ export default function EditEntryCard({ entry, onSave, viewMode }) {
       <div className="attendance-card-header">
         <span className="attendance-card-name">{entry.name}</span>
       </div>
+
+      {entry.sessions && (
+        <p className="edit-entry-sessions">
+          Stepped out and came back:{' '}
+          {entry.sessions
+            .map((session) => `${formatTimeOnly(session.signInTime)} – ${formatTimeOnly(session.signOutTime) || '—'}`)
+            .join(', ')}
+          . Saving replaces these with the one sign-in/sign-out below.
+        </p>
+      )}
 
       <div className="attendance-card-fields">
         <div className="edit-entry-field">

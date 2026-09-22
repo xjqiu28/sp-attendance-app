@@ -88,26 +88,37 @@ function processAttendanceSubmission(submittedName, submittedPersonalCode) {
   if (entryStatus === 'signed-in') {
     return { success: true, message: `${person.name}, you have been signed in.` };
   }
+  if (entryStatus === 'signed-in-again') {
+    return { success: true, message: `${person.name}, welcome back — you have been signed in again.` };
+  }
   if (entryStatus === 'signed-out') {
     return { success: true, message: `${person.name}, you have been signed out.` };
   }
-  return { success: false, error: `${person.name}, you have already signed in and out today.` };
+  return { success: false, error: `${person.name}, today's attendance entry couldn't be read. Please contact the admin.` };
 }
 
 /**
  * Records either sign-in or sign-out for today's attendance cell.
- * Returns 'signed-in' | 'signed-out' | 'already-complete'.
+ * Returns 'signed-in' | 'signed-out' | 'signed-in-again' |
+ * 'already-complete' (the last only if the cell can't be parsed).
  *
  * signInSchedule is the person's own { hour, minute } (from
  * SCHEDULED_SIGN_IN_HEADER), or null to use SIGN_IN_CUTOFF_HOUR.
+ *
+ * Submissions alternate sign-in / sign-out, so someone who steps out
+ * mid-day and comes back (e.g. in 8:30am, out 11am, back 2pm, out
+ * 3:30pm) gets one session per stretch, and only the time actually
+ * signed in counts toward total hours — see buildAttendanceData.
  *
  * First entry:
  * - Saves sign-in time.
  * - If after the cutoff, colors only the sign-in label and time red.
  *
- * Second entry:
- * - Saves sign-out time.
- * - Calculates formatted and decimal total hours.
+ * Every entry after that:
+ * - Signs out of the open session, or starts a new one if the last
+ *   session is already signed out.
+ * - Recalculates formatted and decimal total hours across all
+ *   completed sessions.
  */
 function recordAttendanceEntry(personRowNumber, attendanceCell, signInSchedule) {
   const currentTime = new Date();
@@ -133,15 +144,21 @@ function recordAttendanceEntry(personRowNumber, attendanceCell, signInSchedule) 
 
   const attendanceData = parseAttendanceData(existingCellValue, personRowNumber);
 
-  if (!attendanceData) {
+  if (!attendanceData || !attendanceData['sign in time']) {
     return 'already-complete';
   }
 
-  if (attendanceData['sign out time']) {
-    return 'already-complete';
+  const sessions = getAttendanceSessions(attendanceData);
+  const lastSession = sessions[sessions.length - 1];
+
+  if (lastSession['sign out time']) {
+    sessions.push({ 'sign in time': formatDateTime(currentTime) });
+    writeAttendanceSessions(attendanceCell, sessions, signInSchedule);
+    return 'signed-in-again';
   }
 
-  recordSignOutForAttendanceCell(personRowNumber, attendanceCell, attendanceData, currentTime, signInSchedule);
+  lastSession['sign out time'] = formatDateTime(currentTime);
+  writeAttendanceSessions(attendanceCell, sessions, signInSchedule);
 
   return 'signed-out';
 }
@@ -150,32 +167,12 @@ function recordAttendanceEntry(personRowNumber, attendanceCell, signInSchedule) 
  * Records today's submission as the previous day's sign-out.
  */
 function recordPreviousDaySignOut(personRowNumber, attendanceCell, attendanceData, currentTime, signInSchedule) {
-  const signOutTime = formatDateTime(currentTime);
-
-  const signInDate = parseFormattedDateTime(attendanceData['sign in time']);
-  const signOutDate = parseFormattedDateTime(signOutTime);
-
-  const totalHoursWorked = calculateTotalHours(signInDate, signOutDate);
-
-  const reorderedAttendanceData = {
-    'total hour worked': totalHoursWorked.formatted,
-    'total hour worked decimal': totalHoursWorked.decimal,
-    'sign in time': attendanceData['sign in time'],
-    'sign out time': signOutTime,
-  };
-
-  const reorderedJsonText = JSON.stringify(reorderedAttendanceData);
-  const signInWasLate = isLateSignIn(signInDate, signInSchedule);
-
-  if (signInWasLate) {
-    applyLateSignInFormatting(attendanceCell, reorderedJsonText, attendanceData['sign in time']);
-  } else {
-    attendanceCell.setValue(reorderedJsonText);
-  }
+  recordSignOutForAttendanceCell(personRowNumber, attendanceCell, attendanceData, currentTime, signInSchedule);
 }
 
 /**
- * Records sign-out in an attendance cell that already contains sign-in.
+ * Signs out of the open (last) session in an attendance cell that
+ * already contains a sign-in.
  */
 function recordSignOutForAttendanceCell(
   personRowNumber,
@@ -184,27 +181,91 @@ function recordSignOutForAttendanceCell(
   currentTime,
   signInSchedule
 ) {
-  const signOutTime = formatDateTime(currentTime);
+  const sessions = getAttendanceSessions(attendanceData);
+  sessions[sessions.length - 1]['sign out time'] = formatDateTime(currentTime);
+  writeAttendanceSessions(attendanceCell, sessions, signInSchedule);
+}
 
-  const signInDate = parseFormattedDateTime(attendanceData['sign in time']);
-  const signOutDate = parseFormattedDateTime(signOutTime);
+/**
+ * Returns a day's sign-in/sign-out sessions, oldest first. A day with
+ * a single session (the usual case) has no "sessions" key stored at
+ * all, so it's rebuilt here from the top-level times.
+ */
+function getAttendanceSessions(attendanceData) {
+  if (Array.isArray(attendanceData.sessions) && attendanceData.sessions.length > 0) {
+    return attendanceData.sessions.map((session) => Object.assign({}, session));
+  }
 
-  const totalHoursWorked = calculateTotalHours(signInDate, signOutDate);
+  const session = { 'sign in time': attendanceData['sign in time'] };
 
-  const reorderedAttendanceData = {
-    'total hour worked': totalHoursWorked.formatted,
-    'total hour worked decimal': totalHoursWorked.decimal,
-    'sign in time': attendanceData['sign in time'],
-    'sign out time': signOutTime,
-  };
+  if (attendanceData['sign out time']) {
+    session['sign out time'] = attendanceData['sign out time'];
+  }
 
-  const reorderedJsonText = JSON.stringify(reorderedAttendanceData);
-  const signInWasLate = isLateSignIn(signInDate, signInSchedule);
+  return [session];
+}
 
-  if (signInWasLate) {
-    applyLateSignInFormatting(attendanceCell, reorderedJsonText, attendanceData['sign in time']);
+/**
+ * Builds the stored cell object from a day's sessions:
+ * - "sign in time" is the day's first sign-in (what lateness is
+ *   judged by), "sign out time" the last sign-out — left off while
+ *   the person is currently signed back in, so every "signed in but
+ *   not out yet" check (auto sign-out, yesterday's sign-out, the
+ *   dashboard's status) keeps working unchanged.
+ * - Total hours add up only the completed sessions, so time spent
+ *   stepped out in between is never counted.
+ * - "sessions" is only stored when there's more than one, so a
+ *   normal single sign-in/sign-out day looks exactly as it always has.
+ */
+function buildAttendanceData(sessions) {
+  const attendanceData = {};
+  let totalMinutesWorked = 0;
+  let hasCompletedSession = false;
+
+  sessions.forEach((session) => {
+    if (session['sign out time']) {
+      const millisecondsWorked =
+        parseFormattedDateTime(session['sign out time']).getTime() -
+        parseFormattedDateTime(session['sign in time']).getTime();
+      totalMinutesWorked += Math.round(millisecondsWorked / (1000 * 60));
+      hasCompletedSession = true;
+    }
+  });
+
+  if (hasCompletedSession) {
+    const totalHoursWorked = formatMinutesWorked(totalMinutesWorked);
+    attendanceData['total hour worked'] = totalHoursWorked.formatted;
+    attendanceData['total hour worked decimal'] = totalHoursWorked.decimal;
+  }
+
+  attendanceData['sign in time'] = sessions[0]['sign in time'];
+
+  const lastSession = sessions[sessions.length - 1];
+
+  if (lastSession['sign out time']) {
+    attendanceData['sign out time'] = lastSession['sign out time'];
+  }
+
+  if (sessions.length > 1) {
+    attendanceData.sessions = sessions;
+  }
+
+  return attendanceData;
+}
+
+/**
+ * Writes a day's sessions to its cell, reapplying late formatting
+ * based on the day's first sign-in.
+ */
+function writeAttendanceSessions(attendanceCell, sessions, signInSchedule) {
+  const attendanceData = buildAttendanceData(sessions);
+  const jsonText = JSON.stringify(attendanceData);
+  const firstSignInTime = attendanceData['sign in time'];
+
+  if (isLateSignIn(parseFormattedDateTime(firstSignInTime), signInSchedule)) {
+    applyLateSignInFormatting(attendanceCell, jsonText, firstSignInTime);
   } else {
-    attendanceCell.setValue(reorderedJsonText);
+    attendanceCell.setValue(jsonText);
   }
 }
 

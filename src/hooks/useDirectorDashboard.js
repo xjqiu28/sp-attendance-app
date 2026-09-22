@@ -308,7 +308,7 @@ export default function useDirectorDashboard() {
           ...previous[backendDate],
           entries: previous[backendDate].entries.map((entry) =>
             entry.name === targetName
-              ? { ...entry, signInTime: signInTime || null, signOutTime: signOutTime || null }
+              ? { ...entry, signInTime: signInTime || null, signOutTime: signOutTime || null, sessions: null }
               : entry
           ),
         },

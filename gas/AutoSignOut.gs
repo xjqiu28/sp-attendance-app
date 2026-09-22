@@ -6,8 +6,8 @@
  * (Config.gs, default 6:30pm) and fills in a sign-out for anyone who
  * signed in today but never signed out — recomputing total hours and
  * the late-sign-in flag the same way a normal sign-out would, via
- * writeAttendanceCell (AttendanceLogic.gs), shared with the
- * self-service flow and the director's Edit Day tool. Anyone with
+ * writeAttendanceSessions (AttendanceLogic.gs), shared with the
+ * self-service flow. Anyone with
  * their own SCHEDULED_SIGN_OUT_HEADER (synced in from the Applications
  * sheet — see Applications.gs) gets signed out at their own scheduled
  * time instead of the shared default.
@@ -70,19 +70,18 @@ function autoSignOutStragglers() {
       cutoffTime.setHours(AUTO_SIGN_OUT_HOUR, AUTO_SIGN_OUT_MINUTE, 0, 0);
     }
 
-    const signInDate = parseFormattedDateTime(attendanceData['sign in time']);
+    // Judged by the open session's sign-in, not the day's first — for
+    // someone who stepped out and came back, that's the latest one.
+    const sessions = getAttendanceSessions(attendanceData);
+    const openSession = sessions[sessions.length - 1];
+    const signInDate = parseFormattedDateTime(openSession['sign in time']);
 
     if (signInDate >= cutoffTime) {
       continue; // signed in after the cutoff already passed — leave it alone
     }
 
-    const cutoffTimeText = formatDateTime(cutoffTime);
-    writeAttendanceCell(
-      attendanceCell,
-      attendanceData['sign in time'],
-      cutoffTimeText,
-      person ? person.signInSchedule : null
-    );
+    openSession['sign out time'] = formatDateTime(cutoffTime);
+    writeAttendanceSessions(attendanceCell, sessions, person ? person.signInSchedule : null);
   }
 }
 

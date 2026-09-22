@@ -58,8 +58,9 @@ export async function getDirectorView(name, code, view = 'daily', weekNumber) {
 }
 
 // Returns { success: true, date, entries: [{ name, signInTime,
-// signOutTime }] } for every roster name (blank if nothing recorded
-// yet) for one specific date. Director-only, read-only. Throws (with
+// signOutTime, sessions }] } for every roster name (blank if nothing
+// recorded yet) for one specific date. sessions is null unless the
+// person signed in more than once that day. Director-only, read-only. Throws (with
 // err.name === 'AbortError' on timeout) on network failure.
 export async function getEditDayView(name, code, date) {
   const response = await fetchWithTimeout(WEB_APP_URL, {
