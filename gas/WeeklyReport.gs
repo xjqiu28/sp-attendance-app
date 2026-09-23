@@ -41,7 +41,11 @@ function generateWeeklyTotalsReport() {
   const results = buildWeeklyTotalsResults(getAttendanceSheet(), weekRange);
 
   const reportSheet = writeWeeklyTotalsReport(weekRange, results);
-  emailWeeklyTimesheet(weekRange, results, TIMESHEET_REPORT_EMAIL, getReportSheetUrl(reportSheet));
+
+  if (TIMESHEET_REPORT_EMAIL) {
+    const sharedCopy = shareReportCopy(reportSheet, TIMESHEET_REPORT_EMAIL);
+    emailWeeklyTimesheet(weekRange, results, TIMESHEET_REPORT_EMAIL, sharedCopy.url);
+  }
 
   return results;
 }
@@ -49,8 +53,10 @@ function generateWeeklyTotalsReport() {
 /**
  * Director-triggered version of generateWeeklyTotalsReport: writes the
  * report tab for the Monday-Friday work week starting on weekStart
- * ("M/d/yyyy", a Monday — the dashboard's selected week), then emails
- * it to email if one was given. Blank email just writes the tab.
+ * ("M/d/yyyy", a Monday — the dashboard's selected week). If an email
+ * is given, also shares a standalone copy of the tab with that address
+ * (see shareReportCopy) and emails them a link to it. Blank email just
+ * writes the tab.
  */
 function generateReportForWeek(submittedName, submittedPersonalCode, weekStart, email) {
   const auth = authorizeDirector(submittedName, submittedPersonalCode);
@@ -77,21 +83,91 @@ function generateReportForWeek(submittedName, submittedPersonalCode, weekStart, 
   const results = buildWeeklyTotalsResults(auth.sheet, weekRange);
   const reportSheet = writeWeeklyTotalsReport(weekRange, results);
   const reportUrl = getReportSheetUrl(reportSheet);
+  const tabName = reportSheet.getName();
 
-  if (recipient) {
-    emailWeeklyTimesheet(weekRange, results, recipient, reportUrl);
+  if (!recipient) {
+    return {
+      success: true,
+      message: `Report saved to the "${tabName}" tab.`,
+      tabName: tabName,
+      reportUrl: reportUrl,
+      sharedCopyUrl: null,
+    };
   }
 
-  const tabName = reportSheet.getName();
+  const sharedCopy = shareReportCopy(reportSheet, recipient);
+  emailWeeklyTimesheet(weekRange, results, recipient, sharedCopy.url);
+
+  const shareNote = sharedCopy.shareError
+    ? ` The copy couldn't be shared with ${recipient} (${sharedCopy.shareError}) — they'll get the email but can't open the link; share it from Drive by hand.`
+    : ` A copy was shared with ${recipient}.`;
 
   return {
     success: true,
-    message: recipient
-      ? `Report saved to the "${tabName}" tab and emailed to ${recipient}.`
-      : `Report saved to the "${tabName}" tab.`,
+    message: `Report saved to the "${tabName}" tab and emailed to ${recipient}.${shareNote}`,
     tabName: tabName,
     reportUrl: reportUrl,
+    sharedCopyUrl: sharedCopy.url,
   };
+}
+
+/**
+ * Google Sheets can only share whole files, not single tabs — and the
+ * attendance spreadsheet can't be shared with a report recipient, since
+ * its Personal Code column is everyone's birthday. So the report tab's
+ * contents are also copied into their own standalone spreadsheet
+ * ("Weekly Timesheet: Week of ...", in the script owner's My Drive),
+ * and that file is shared view-only with recipient.
+ *
+ * Uses Spreadsheet#addViewer rather than DriveApp on purpose: DriveApp
+ * needs the full Drive scope, which appsscript.json deliberately
+ * doesn't request — the spreadsheets scope already covers this.
+ *
+ * Re-running a week refreshes the same file instead of making another
+ * (its ID is remembered in script properties, keyed by tab name), and
+ * each run adds that run's recipient as another viewer. Returns
+ * { url, shareError } — shareError is set (and the copy left unshared)
+ * when Drive refuses the address, e.g. one without a Google account.
+ */
+function shareReportCopy(reportSheet, recipient) {
+  const tabName = reportSheet.getName();
+  const properties = PropertiesService.getScriptProperties();
+  const propertyKey = `REPORT_COPY_ID:${tabName}`;
+
+  let copy = null;
+  const existingId = properties.getProperty(propertyKey);
+
+  if (existingId) {
+    try {
+      copy = SpreadsheetApp.openById(existingId);
+    } catch (error) {
+      copy = null; // deleted/trashed since — make a fresh one below
+    }
+  }
+
+  if (!copy) {
+    copy = SpreadsheetApp.create(`Weekly Timesheet: ${tabName}`);
+    properties.setProperty(propertyKey, copy.getId());
+  }
+
+  const values = reportSheet.getDataRange().getValues();
+  const copySheet = copy.getSheets()[0];
+
+  copySheet.clear();
+  copySheet.setName(tabName);
+  copySheet.getRange(1, 1, values.length, values[0].length).setValues(values);
+  copySheet.getRange(1, 1, 1, values[0].length).setFontWeight('bold');
+  copySheet.setFrozenRows(1);
+
+  let shareError = null;
+
+  try {
+    copy.addViewer(recipient);
+  } catch (error) {
+    shareError = error.message;
+  }
+
+  return { url: copy.getUrl(), shareError: shareError };
 }
 
 /**
@@ -290,8 +366,10 @@ function writeWeeklyTotalsReport(weekRange, results) {
  * auto-report passes TIMESHEET_REPORT_EMAIL, Config.gs) — anyone over
  * their weekly hour cap is called out, since the director dashboard's
  * Weekly tab is where those actually get approved (WeekApprovals.gs).
- * Includes a link to the report tab when reportUrl is given. Does
- * nothing if the recipient is blank.
+ * Includes a link to the report when reportUrl is given — the shared
+ * standalone copy (shareReportCopy), since recipients can't open the
+ * attendance spreadsheet itself. Does nothing if the recipient is
+ * blank.
  */
 function emailWeeklyTimesheet(weekRange, results, recipient, reportUrl) {
   if (!recipient) {
@@ -323,7 +401,7 @@ function emailWeeklyTimesheet(weekRange, results, recipient, reportUrl) {
 
   const htmlBody = `
     <p>Weekly timesheet for ${startLabel} - ${endLabel}.</p>
-    ${reportUrl ? `<p><a href="${reportUrl}">Open the report tab</a></p>` : ''}
+    ${reportUrl ? `<p><a href="${reportUrl}">Open the full report</a></p>` : ''}
     ${overCapNotice}
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
       <tr><th>Name</th><th>Total Hours</th><th>Over Cap</th></tr>
