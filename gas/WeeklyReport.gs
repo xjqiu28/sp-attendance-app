@@ -29,11 +29,84 @@
  * summarizing that same Monday through Friday.
  *
  * You can also run generateWeeklyTotalsReport() manually any time to
- * generate the report for the current/most recent work week on demand.
+ * generate the report for the current/most recent work week on demand,
+ * or use the director dashboard's Generate Report button (Weekly tab),
+ * which does the same for whichever week is selected there and emails
+ * it to whatever address the director types in — see
+ * generateReportForWeek below.
  */
 
 function generateWeeklyTotalsReport() {
-  const sheet = getAttendanceSheet();
+  const weekRange = getMostRecentCompletedWeek(new Date());
+  const results = buildWeeklyTotalsResults(getAttendanceSheet(), weekRange);
+
+  const reportSheet = writeWeeklyTotalsReport(weekRange, results);
+  emailWeeklyTimesheet(weekRange, results, TIMESHEET_REPORT_EMAIL, getReportSheetUrl(reportSheet));
+
+  return results;
+}
+
+/**
+ * Director-triggered version of generateWeeklyTotalsReport: writes the
+ * report tab for the Monday-Friday work week starting on weekStart
+ * ("M/d/yyyy", a Monday — the dashboard's selected week), then emails
+ * it to email if one was given. Blank email just writes the tab.
+ */
+function generateReportForWeek(submittedName, submittedPersonalCode, weekStart, email) {
+  const auth = authorizeDirector(submittedName, submittedPersonalCode);
+
+  if (!auth.authorized) {
+    return { success: false, error: auth.error };
+  }
+
+  if (!weekStart) {
+    return { success: false, error: 'A week is required.' };
+  }
+
+  const recipient = String(email || '').trim();
+
+  if (recipient && !isValidEmail(recipient)) {
+    return { success: false, error: `"${recipient}" doesn't look like an email address.` };
+  }
+
+  const start = parseHeaderDate(weekStart);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 4); // Friday of that same work week
+
+  const weekRange = { weekStart: start, weekEnd: end };
+  const results = buildWeeklyTotalsResults(auth.sheet, weekRange);
+  const reportSheet = writeWeeklyTotalsReport(weekRange, results);
+  const reportUrl = getReportSheetUrl(reportSheet);
+
+  if (recipient) {
+    emailWeeklyTimesheet(weekRange, results, recipient, reportUrl);
+  }
+
+  const tabName = reportSheet.getName();
+
+  return {
+    success: true,
+    message: recipient
+      ? `Report saved to the "${tabName}" tab and emailed to ${recipient}.`
+      : `Report saved to the "${tabName}" tab.`,
+    tabName: tabName,
+    reportUrl: reportUrl,
+  };
+}
+
+/**
+ * Direct link to one tab of the attendance spreadsheet.
+ */
+function getReportSheetUrl(reportSheet) {
+  return `${SpreadsheetApp.getActiveSpreadsheet().getUrl()}#gid=${reportSheet.getSheetId()}`;
+}
+
+/**
+ * Each roster person's hours for every day of weekRange (Monday-
+ * Friday) plus their week total and over-cap flag — what both the
+ * report tab and the email are built from.
+ */
+function buildWeeklyTotalsResults(sheet, weekRange) {
   const columnIndexes = getColumnIndexes(sheet);
   const nameColumnIndex = columnIndexes.Name;
   const maxWeeklyHoursColumnIndex = columnIndexes[MAX_WEEKLY_HOURS_HEADER];
@@ -41,9 +114,6 @@ function generateWeeklyTotalsReport() {
   if (nameColumnIndex === undefined) {
     throw new Error('The sheet must contain a "Name" header.');
   }
-
-  const currentTime = new Date();
-  const weekRange = getMostRecentCompletedWeek(currentTime);
 
   const weekDateStrings = [];
   const cursor = new Date(weekRange.weekStart);
@@ -56,11 +126,21 @@ function generateWeeklyTotalsReport() {
   const lastRow = sheet.getLastRow();
   const results = [];
 
-  for (let personRowNumber = 2; personRowNumber <= lastRow; personRowNumber++) {
-    const name = String(sheet.getRange(personRowNumber, nameColumnIndex + 1).getValue()).trim();
+  if (lastRow < 2) {
+    return results;
+  }
+
+  // One bulk read instead of a read per cell — this also runs on
+  // demand from the dashboard (generateReportForWeek), where a read per
+  // cell could outlast the website's request timeout.
+  const rows = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+  rows.forEach((row, index) => {
+    const personRowNumber = index + 2;
+    const name = String(row[nameColumnIndex]).trim();
 
     if (!name) {
-      continue;
+      return;
     }
 
     const dailyHours = []; // one entry per weekday, null if no recorded hours that day
@@ -71,7 +151,7 @@ function generateWeeklyTotalsReport() {
       let hoursForDay = null;
 
       if (dateColumnIndex !== undefined) {
-        const cellValue = sheet.getRange(personRowNumber, dateColumnIndex + 1).getValue();
+        const cellValue = row[dateColumnIndex];
 
         if (cellValue !== '' && cellValue !== null) {
           const attendanceData = parseAttendanceData(cellValue, personRowNumber);
@@ -91,7 +171,7 @@ function generateWeeklyTotalsReport() {
 
     const maxWeeklyHoursValue =
       maxWeeklyHoursColumnIndex !== undefined
-        ? sheet.getRange(personRowNumber, maxWeeklyHoursColumnIndex + 1).getValue()
+        ? row[maxWeeklyHoursColumnIndex]
         : '';
     const maxWeeklyHours =
       maxWeeklyHoursValue !== '' && maxWeeklyHoursValue !== null ? Number(maxWeeklyHoursValue) : null;
@@ -104,10 +184,7 @@ function generateWeeklyTotalsReport() {
       maxWeeklyHours: maxWeeklyHours,
       overCap: overCap,
     });
-  }
-
-  writeWeeklyTotalsReport(weekRange, results);
-  emailWeeklyTimesheet(weekRange, results);
+  });
 
   return results;
 }
@@ -156,7 +233,7 @@ function getMostRecentCompletedWeek(referenceDate) {
  * week (e.g. "Week of 9-7-2026 to 9-11-2026"), creating that tab if
  * it doesn't exist yet. Re-running the report for the same week
  * updates existing people's rows in place rather than duplicating
- * them; a new week gets its own separate tab.
+ * them; a new week gets its own separate tab. Returns that tab.
  */
 function writeWeeklyTotalsReport(weekRange, results) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -204,16 +281,20 @@ function writeWeeklyTotalsReport(weekRange, results) {
       reportSheet.appendRow(rowValues);
     }
   });
+
+  return reportSheet;
 }
 
 /**
- * Emails a summary of this week's report to TIMESHEET_REPORT_EMAIL
- * (Config.gs) — anyone over their weekly hour cap is called out, since
- * the director dashboard's Weekly tab is where those actually get
- * approved (WeekApprovals.gs). Does nothing if the recipient is blank.
+ * Emails a summary of this week's report to recipient (the Friday
+ * auto-report passes TIMESHEET_REPORT_EMAIL, Config.gs) — anyone over
+ * their weekly hour cap is called out, since the director dashboard's
+ * Weekly tab is where those actually get approved (WeekApprovals.gs).
+ * Includes a link to the report tab when reportUrl is given. Does
+ * nothing if the recipient is blank.
  */
-function emailWeeklyTimesheet(weekRange, results) {
-  if (!TIMESHEET_REPORT_EMAIL) {
+function emailWeeklyTimesheet(weekRange, results, recipient, reportUrl) {
+  if (!recipient) {
     return;
   }
 
@@ -242,6 +323,7 @@ function emailWeeklyTimesheet(weekRange, results) {
 
   const htmlBody = `
     <p>Weekly timesheet for ${startLabel} - ${endLabel}.</p>
+    ${reportUrl ? `<p><a href="${reportUrl}">Open the report tab</a></p>` : ''}
     ${overCapNotice}
     <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
       <tr><th>Name</th><th>Total Hours</th><th>Over Cap</th></tr>
@@ -250,7 +332,7 @@ function emailWeeklyTimesheet(weekRange, results) {
   `;
 
   MailApp.sendEmail({
-    to: TIMESHEET_REPORT_EMAIL,
+    to: recipient,
     subject: `Weekly Timesheet: ${startLabel} - ${endLabel}`,
     htmlBody: htmlBody,
   });

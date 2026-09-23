@@ -220,3 +220,19 @@ export async function generatePersonalCodes(name, code) {
 
   return response.json();
 }
+
+// Writes the weekly timesheet tab for the Monday-Friday work week
+// starting on weekStart ("M/d/yyyy", a Monday), and emails it to email
+// if one is given (blank just writes the tab). Director-only. Returns
+// { success: true, message, tabName, reportUrl } or { success: false,
+// error }. Throws (with err.name === 'AbortError' on timeout) on
+// network failure.
+export async function generateReport(name, code, weekStart, email) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'generateReport', name, code, weekStart, email }),
+  });
+
+  return response.json();
+}

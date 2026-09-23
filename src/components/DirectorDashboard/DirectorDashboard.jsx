@@ -38,6 +38,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleModeChange,
     handleViewModeChange,
     handleWeekChange,
+    handleGenerateReport,
     handleRefresh,
     handleLogOut,
     handleGenerateCodes,
@@ -191,6 +192,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
               viewMode={viewMode}
               onApproveWeek={handleApproveWeek}
               onUnapproveWeek={handleUnapproveWeek}
+              onGenerateReport={handleGenerateReport}
             />
           )}
         </>

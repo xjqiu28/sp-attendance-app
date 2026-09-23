@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   getDirectorView,
   generatePersonalCodes,
+  generateReport,
   getEditDayView,
   updateAttendanceEntry,
   approveWeek,
@@ -516,6 +517,20 @@ export default function useDirectorDashboard() {
     }
   }
 
+  // Returns the backend result so GenerateReportPanel can show its own
+  // status/link, the same way handleSaveEntry does for EditEntryCard.
+  async function handleGenerateReport(weekStart, email) {
+    if (!credentials) {
+      return { success: false, error: 'Please log in again.' };
+    }
+
+    try {
+      return await generateReport(credentials.name, credentials.code, weekStart, email);
+    } catch (err) {
+      return { success: false, error: networkErrorText(err) };
+    }
+  }
+
   function handleLogOut() {
     setCredentials(null);
     setCode('');
@@ -582,6 +597,7 @@ export default function useDirectorDashboard() {
     handleModeChange,
     handleViewModeChange,
     handleWeekChange,
+    handleGenerateReport,
     handleRefresh,
     handleLogOut,
     handleGenerateCodes,

@@ -203,6 +203,8 @@ function doPost(e) {
       output = sendOfferLetterEmails(submittedName, submittedPersonalCode);
     } else if (action === 'checkOfferReplies') {
       output = checkOfferReplies(submittedName, submittedPersonalCode);
+    } else if (action === 'generateReport') {
+      output = generateReportForWeek(submittedName, submittedPersonalCode, data.weekStart, data.email);
     } else if (action === 'generateCodes') {
       output = generatePersonalCodesFromBirthdays(submittedName, submittedPersonalCode);
     } else {
