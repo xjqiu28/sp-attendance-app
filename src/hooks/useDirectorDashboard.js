@@ -5,6 +5,8 @@ import {
   generateReport,
   getEditDayView,
   updateAttendanceEntry,
+  getWorkHoursView,
+  updateWorkHours,
   approveWeek,
   unapproveWeek,
   getApplicationsView,
@@ -36,7 +38,7 @@ function readStoredViewMode() {
 // the component so DirectorDashboard.jsx can stay focused on layout.
 //
 // Each mode's data is cached once fetched (dailyData, weeklyDataByWeek,
-// editDayDataByDate, applicationsData) so switching between tabs you've
+// editDayDataByDate, workHoursData, applicationsData) so switching between tabs you've
 // already visited shows the cached result instantly instead of
 // re-fetching every time — a mode is only re-fetched when it has never
 // been loaded, when a param changes to a value not yet cached (a new
@@ -52,7 +54,7 @@ export default function useDirectorDashboard() {
   // Once logged in, the validated credentials are kept here so the
   // Daily/Weekly toggle and week picker can re-fetch without asking again.
   const [credentials, setCredentials] = useState(null); // { name, code }
-  const [mode, setMode] = useState('daily'); // 'daily' | 'weekly' | 'edit' | 'applications'
+  const [mode, setMode] = useState('daily'); // 'daily' | 'weekly' | 'edit' | 'workHours' | 'applications'
   // Applies across all modes — how densely entries are shown, not
   // which entries. Persisted since it's a display preference, not
   // per-session state.
@@ -89,6 +91,11 @@ export default function useDirectorDashboard() {
   const [editDayError, setEditDayError] = useState(null);
 
   const editDayData = editDayDataByDate[toBackendDate(editDate)] ?? null;
+
+  // 'Work Hours' mode's own data, independent of the others.
+  const [workHoursData, setWorkHoursData] = useState(null);
+  const [workHoursLoading, setWorkHoursLoading] = useState(false);
+  const [workHoursError, setWorkHoursError] = useState(null);
 
   // 'Applications' mode's own data, independent of the others.
   const [applicationsData, setApplicationsData] = useState(null);
@@ -200,6 +207,8 @@ export default function useDirectorDashboard() {
 
     if (newMode === 'edit') {
       loadEditDay(credentials, editDate);
+    } else if (newMode === 'workHours') {
+      loadWorkHours(credentials);
     } else if (newMode === 'applications') {
       loadApplications(credentials);
     } else if (newMode === 'daily') {
@@ -243,6 +252,8 @@ export default function useDirectorDashboard() {
       loadWeekly(credentials, currentWeekNumber ?? undefined, { force: true });
     } else if (mode === 'edit') {
       loadEditDay(credentials, editDate, { force: true });
+    } else if (mode === 'workHours') {
+      loadWorkHours(credentials, { force: true });
     } else if (mode === 'applications') {
       loadApplications(credentials, { force: true });
     }
@@ -375,6 +386,58 @@ export default function useDirectorDashboard() {
           ),
         },
       }));
+    }
+
+    return result;
+  }
+
+  async function loadWorkHours(activeCredentials, options = {}) {
+    if (!options.force && workHoursData) {
+      return;
+    }
+
+    setWorkHoursLoading(true);
+    setWorkHoursError(null);
+
+    try {
+      const result = await getWorkHoursView(activeCredentials.name, activeCredentials.code);
+
+      if (result.success) {
+        setWorkHoursData(result);
+      } else {
+        setWorkHoursError(result.error);
+      }
+    } catch (err) {
+      setWorkHoursError(networkErrorText(err));
+    } finally {
+      setWorkHoursLoading(false);
+    }
+  }
+
+  // Same always-resolves pattern as handleSaveEntry. startTime/endTime
+  // are native <input type="time"> values ("HH:MM", or '' for both to
+  // clear).
+  async function handleSaveWorkHours(targetName, startTime, endTime) {
+    let result;
+
+    try {
+      result = await updateWorkHours(credentials.name, credentials.code, targetName, startTime, endTime);
+    } catch (err) {
+      return { success: false, error: networkErrorText(err) };
+    }
+
+    if (result.success) {
+      setWorkHoursData((previous) => ({
+        ...previous,
+        entries: previous.entries.map((entry) =>
+          entry.name === targetName ? { ...entry, workHours: result.workHours, startTime, endTime } : entry
+        ),
+      }));
+
+      // Work Hours drive Daily/Weekly's late flags and notes — drop
+      // those caches so they re-fetch fresh too.
+      setDailyData(null);
+      setWeeklyDataByWeek({});
     }
 
     return result;
@@ -542,6 +605,8 @@ export default function useDirectorDashboard() {
     setCurrentWeekNumber(null);
     setEditDayDataByDate({});
     setEditDayError(null);
+    setWorkHoursData(null);
+    setWorkHoursError(null);
     setApplicationsData(null);
     setApplicationsError(null);
     setSyncScheduleState({ loading: false, message: null, error: null });
@@ -587,6 +652,9 @@ export default function useDirectorDashboard() {
     editDayData,
     editDayLoading,
     editDayError,
+    workHoursData,
+    workHoursLoading,
+    workHoursError,
     applicationsData,
     applicationsLoading,
     applicationsError,
@@ -603,6 +671,7 @@ export default function useDirectorDashboard() {
     handleGenerateCodes,
     handleEditDateChange,
     handleSaveEntry,
+    handleSaveWorkHours,
     handleApproveWeek,
     handleUnapproveWeek,
     handleUpdateApplication,

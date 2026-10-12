@@ -99,6 +99,36 @@ export async function updateAttendanceEntry(name, code, targetName, date, signIn
   return response.json();
 }
 
+// Returns { success: true, entries: [{ name, workHours, startTime,
+// endTime }] } for every roster name, where startTime/endTime are
+// "HH:MM" (24-hour, blank if Work Hours is empty or unrecognized).
+// Director-only, read-only. Throws (with err.name === 'AbortError' on
+// timeout) on network failure.
+export async function getWorkHoursView(name, code) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'workHoursView', name, code }),
+  });
+
+  return response.json();
+}
+
+// Overwrites targetName's Work Hours column with startTime-endTime
+// ("HH:MM", 24-hour) — pass '' for both to clear it. Director-only.
+// Returns { success: true, message, workHours } or { success: false,
+// error }. Throws (with err.name === 'AbortError' on timeout) on
+// network failure.
+export async function updateWorkHours(name, code, targetName, startTime, endTime) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'updateWorkHours', name, code, targetName, startTime, endTime }),
+  });
+
+  return response.json();
+}
+
 // Records that name/code (a director) approved targetName's week
 // starting weekStart (the "M/d/yyyy" weekStart a getDirectorView weekly
 // call returned). Director-only. Returns { success: true, message,

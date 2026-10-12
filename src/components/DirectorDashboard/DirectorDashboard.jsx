@@ -4,6 +4,7 @@ import StatusMessage from '../StatusMessage/StatusMessage.jsx';
 import DailyView from '../DailyView/DailyView.jsx';
 import WeeklyView from '../WeeklyView/WeeklyView.jsx';
 import EditDayView from '../EditDayView/EditDayView.jsx';
+import WorkHoursView from '../WorkHoursView/WorkHoursView.jsx';
 import ApplicationsView from '../ApplicationsView/ApplicationsView.jsx';
 import GenerateCodesButton from '../GenerateCodesButton/GenerateCodesButton.jsx';
 import '@/App.scss'; // .tab, reused here for the mode tabs and log-out button
@@ -28,6 +29,9 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     editDayData,
     editDayLoading,
     editDayError,
+    workHoursData,
+    workHoursLoading,
+    workHoursError,
     applicationsData,
     applicationsLoading,
     applicationsError,
@@ -44,6 +48,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleGenerateCodes,
     handleEditDateChange,
     handleSaveEntry,
+    handleSaveWorkHours,
     handleApproveWeek,
     handleUnapproveWeek,
     handleUpdateApplication,
@@ -79,13 +84,21 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
         ? `Weekly Totals — Week ${dashboardData?.weekNumber || ''}`
         : mode === 'edit'
           ? 'Edit Day'
-          : 'Applications';
+          : mode === 'workHours'
+            ? 'Work Hours'
+            : 'Applications';
 
   // Each mode's data is cached (see useDirectorDashboard), so switching
   // tabs doesn't refetch — this is the escape hatch for getting fresh
   // data on demand instead.
   const currentModeLoading =
-    mode === 'edit' ? editDayLoading : mode === 'applications' ? applicationsLoading : dashboardLoading;
+    mode === 'edit'
+      ? editDayLoading
+      : mode === 'workHours'
+        ? workHoursLoading
+        : mode === 'applications'
+          ? applicationsLoading
+          : dashboardLoading;
 
   return (
     <div className="dashboard">
@@ -128,6 +141,13 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           </button>
           <button
             type="button"
+            className={mode === 'workHours' ? 'tab active' : 'tab'}
+            onClick={() => handleModeChange('workHours')}
+          >
+            Work Hours
+          </button>
+          <button
+            type="button"
             className={mode === 'applications' ? 'tab active' : 'tab'}
             onClick={() => handleModeChange('applications')}
           >
@@ -161,6 +181,14 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           loading={editDayLoading}
           error={editDayError}
           onSaveEntry={handleSaveEntry}
+          viewMode={viewMode}
+        />
+      ) : mode === 'workHours' ? (
+        <WorkHoursView
+          data={workHoursData}
+          loading={workHoursLoading}
+          error={workHoursError}
+          onSaveWorkHours={handleSaveWorkHours}
           viewMode={viewMode}
         />
       ) : mode === 'applications' ? (

@@ -7,10 +7,12 @@
  * signed in today but never signed out — recomputing total hours and
  * the late-sign-in flag the same way a normal sign-out would, via
  * writeAttendanceSessions (AttendanceLogic.gs), shared with the
- * self-service flow. Anyone with
- * their own SCHEDULED_SIGN_OUT_HEADER (synced in from the Applications
- * sheet — see Applications.gs) gets signed out at their own scheduled
- * time instead of the shared default.
+ * self-service flow. The sign-out time recorded is the end time of
+ * the person's WORK_HOURS_HEADER (e.g. 3:00 PM for "10AM - 3PM"), not
+ * the time the trigger ran; without Work Hours it falls back to their
+ * SCHEDULED_SIGN_OUT_HEADER (see Applications.gs), then to
+ * AUTO_SIGN_OUT_HOUR:AUTO_SIGN_OUT_MINUTE (see getSignOutSchedule,
+ * Utils.gs).
  *
  * ONE-TIME SETUP: run createAutoSignOutTrigger() once (select it in
  * the function dropdown at the top of the Apps Script editor, click
@@ -74,10 +76,19 @@ function autoSignOutStragglers() {
     // someone who stepped out and came back, that's the latest one.
     const sessions = getAttendanceSessions(attendanceData);
     const openSession = sessions[sessions.length - 1];
+
+    if (!openSession['sign in time'] || openSession['sign out time']) {
+      continue; // only sign out a session that actually has a sign-in logged and is still open
+    }
+
     const signInDate = parseFormattedDateTime(openSession['sign in time']);
 
     if (signInDate >= cutoffTime) {
       continue; // signed in after the cutoff already passed — leave it alone
+    }
+
+    if (cutoffTime > currentTime) {
+      continue; // Work Hours end after the trigger ran — still on shift, so don't record a future sign-out
     }
 
     openSession['sign out time'] = formatDateTime(cutoffTime);

@@ -1,0 +1,7 @@
+@use '@/styles/variables' as vars;
+
+.work-hours-unrecognized {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: vars.$color-text-secondary;
+}

@@ -22,8 +22,9 @@ const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 // included in the dashboard's "Signed In Late" list).
 const SIGN_IN_CUTOFF_HOUR = 9;
 
-// Anyone still signed in (no sign-out yet) at this time gets
-// automatically signed out — see AutoSignOut.gs.
+// When the daily auto sign-out runs (see AutoSignOut.gs). Anyone still
+// signed in then is signed out at their Work Hours end time — or this
+// time itself, for anyone with no Work Hours or Scheduled Sign Out.
 const AUTO_SIGN_OUT_HOUR = 18;
 const AUTO_SIGN_OUT_MINUTE = 30;
 
@@ -54,8 +55,10 @@ const SCHEDULED_SIGN_OUT_HEADER = 'Scheduled Sign Out';
 // free text like "10AM - 3PM" or "07:30AM - 06:15PM" (see
 // parseWorkHours, Utils.gs). Drives the director dashboard's arrived
 // early/late and left early/stayed late notes, and its start time takes
-// priority over Scheduled Sign In for the late flag. Auto sign-out
-// still uses Scheduled Sign Out.
+// priority over Scheduled Sign In for the late flag. Its end time is
+// when auto sign-out signs someone out (taking priority over Scheduled
+// Sign Out). Directors can edit it from the dashboard's Work Hours tab
+// (see WorkHours.gs).
 const WORK_HOURS_HEADER = 'Work Hours';
 
 // How many minutes after someone's start time counts as late — 10

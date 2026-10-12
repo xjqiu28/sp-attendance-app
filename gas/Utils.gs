@@ -249,6 +249,34 @@ function getSignInSchedule(workHoursValue, scheduledSignInValue) {
 }
 
 /**
+ * A person's end time for auto sign-out (AutoSignOut.gs), as { hour,
+ * minute }: their Work Hours end (WORK_HOURS_HEADER) if that parses,
+ * otherwise their Scheduled Sign Out (SCHEDULED_SIGN_OUT_HEADER),
+ * otherwise null — which autoSignOutStragglers treats as
+ * AUTO_SIGN_OUT_HOUR:AUTO_SIGN_OUT_MINUTE. Takes the two raw cell
+ * values, same as getSignInSchedule.
+ */
+function getSignOutSchedule(workHoursValue, scheduledSignOutValue) {
+  const workHours = parseWorkHours(workHoursValue);
+
+  if (workHours) {
+    return workHours.end;
+  }
+
+  return parseTimeOfDay(scheduledSignOutValue);
+}
+
+/**
+ * Formats { hour, minute } (24-hour) as "9:00 AM" — the reverse of
+ * parseTimeOfDay. Used to write Work Hours cells (see WorkHours.gs).
+ */
+function formatTimeOfDay(time) {
+  const meridiem = time.hour >= 12 ? 'PM' : 'AM';
+  const hour = time.hour % 12 || 12;
+  return `${hour}:${String(time.minute).padStart(2, '0')} ${meridiem}`;
+}
+
+/**
  * Whole minutes between a sign-in and its start time (negative if
  * early). scheduleOverride is a person's own { hour, minute } (see
  * getSignInSchedule) — omit it (or pass null) to use

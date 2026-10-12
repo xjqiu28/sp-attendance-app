@@ -26,14 +26,15 @@
  * string and parsed back out on read.
  */
 
-const ROSTER_CACHE_KEY = 'roster_v2';
+const ROSTER_CACHE_KEY = 'roster_v3';
 const ROSTER_CACHE_TTL_SECONDS = 300; // 5 minutes
 
 /**
  * Returns { byLowerName: { [lowercasedName]: { name, row, personalCode,
  * isAdmin, signInSchedule, signOutSchedule } } }, where each schedule
- * is { hour, minute } or null. signInSchedule comes from Work Hours
- * when set, else Scheduled Sign In (see getSignInSchedule, Utils.gs). Rebuilt from the sheet on a cache miss,
+ * is { hour, minute } or null. signInSchedule/signOutSchedule come
+ * from Work Hours' start/end when set, else Scheduled Sign In/Out (see
+ * getSignInSchedule/getSignOutSchedule, Utils.gs). Rebuilt from the sheet on a cache miss,
  * reused as-is on a cache hit.
  */
 function getRoster(sheet, columnIndexes) {
@@ -114,7 +115,10 @@ function buildRosterFromSheet(sheet, columnIndexes) {
         workHoursValues ? workHoursValues[i][0] : '',
         scheduledSignIns ? scheduledSignIns[i][0] : ''
       ),
-      signOutSchedule: scheduledSignOuts ? parseTimeOfDay(scheduledSignOuts[i][0]) : null,
+      signOutSchedule: getSignOutSchedule(
+        workHoursValues ? workHoursValues[i][0] : '',
+        scheduledSignOuts ? scheduledSignOuts[i][0] : ''
+      ),
     };
   }
 
