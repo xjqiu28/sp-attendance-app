@@ -9,7 +9,7 @@ export default function DailyView({ data, viewMode }) {
         totalRoster={data.totalRoster}
         totalSignedIn={data.totalSignedIn}
         absentNames={data.absentNames}
-        lateNames={data.lateNames}
+        signedInEntries={data.entries.filter((entry) => entry.signInTime)}
       />
 
       <div className={viewMode === 'list' ? 'entry-list' : 'card-grid'}>
