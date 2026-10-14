@@ -25,6 +25,8 @@ jobs:
           node-version: 20
 
       - run: npm install
+      # A failing test stops the build, so the site never deploys.
+      - run: npm test
       - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3

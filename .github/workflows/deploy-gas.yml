@@ -26,6 +26,9 @@ jobs:
 
       - run: npm install
 
+      # A failing test stops the job before clasp pushes anything.
+      - run: npm test
+
       - name: Configure clasp credentials
         run: |
           echo "${{ secrets.CLASPRC_JSON }}" | base64 -d > ~/.clasprc.json

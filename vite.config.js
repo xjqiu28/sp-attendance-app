@@ -23,4 +23,10 @@ export default defineConfig({
       },
     },
   },
+  // Vitest (`npm test`): components render into jsdom; stylesheet
+  // imports are stubbed out, since tests only check behavior/markup.
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+  },
 });
