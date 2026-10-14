@@ -10,7 +10,7 @@ import GenerateCodesButton from '../GenerateCodesButton/GenerateCodesButton.jsx'
 import '@/App.scss'; // .tab, reused here for the mode tabs and log-out button
 import './DirectorDashboard.scss';
 
-export default function DirectorDashboard({ names, namesLoading, namesLoadFailed }) {
+export default function DirectorDashboard({ names, namesLoading, namesLoadFailed, onRosterChange }) {
   const {
     selectedName,
     setSelectedName,
@@ -49,13 +49,14 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
     handleEditDateChange,
     handleSaveEntry,
     handleSaveWorkHours,
+    handleAddStaff,
     handleApproveWeek,
     handleUnapproveWeek,
     handleUpdateApplication,
     handleSyncScheduledTimes,
     handleSendOfferLetters,
     handleCheckOfferReplies,
-  } = useDirectorDashboard();
+  } = useDirectorDashboard({ onRosterChange });
 
   if (!credentials) {
     return (
@@ -85,7 +86,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
         : mode === 'edit'
           ? 'Edit Day'
           : mode === 'workHours'
-            ? 'Work Hours'
+            ? 'Staff'
             : 'Applications';
 
   // Each mode's data is cached (see useDirectorDashboard), so switching
@@ -144,7 +145,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
             className={mode === 'workHours' ? 'tab active' : 'tab'}
             onClick={() => handleModeChange('workHours')}
           >
-            Work Hours
+            Staff
           </button>
           <button
             type="button"
@@ -189,6 +190,7 @@ export default function DirectorDashboard({ names, namesLoading, namesLoadFailed
           loading={workHoursLoading}
           error={workHoursError}
           onSaveWorkHours={handleSaveWorkHours}
+          onAddStaff={handleAddStaff}
           viewMode={viewMode}
         />
       ) : mode === 'applications' ? (

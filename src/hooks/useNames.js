@@ -24,6 +24,8 @@ function writeCachedNames(names) {
 // Names rarely change day to day, so a cached copy from localStorage is
 // shown immediately (no "Loading names..." on repeat visits) while a
 // fresh copy is fetched in the background and silently swapped in.
+// refreshNames re-fetches on demand — e.g. after a director adds
+// someone, so they show up in the dropdowns without a page reload.
 export default function useNames() {
   const [names, setNames] = useState(() => readCachedNames() || []);
   const [loading, setLoading] = useState(() => readCachedNames() === null);
@@ -56,5 +58,15 @@ export default function useNames() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { names, loading, failed };
+  async function refreshNames() {
+    try {
+      const fetchedNames = await fetchNames();
+      setNames(fetchedNames);
+      writeCachedNames(fetchedNames);
+    } catch {
+      // Keep showing the current list — it'll catch up on the next load.
+    }
+  }
+
+  return { names, loading, failed, refreshNames };
 }

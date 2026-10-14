@@ -7,6 +7,7 @@ import {
   updateAttendanceEntry,
   getWorkHoursView,
   updateWorkHours,
+  addStaff,
   approveWeek,
   unapproveWeek,
   getApplicationsView,
@@ -45,7 +46,9 @@ function readStoredViewMode() {
 // week or date), or when handleRefresh explicitly forces it. Logging
 // out clears every cache since the next login could be a different
 // director/dataset.
-export default function useDirectorDashboard() {
+// onRosterChange is called after a director adds someone, so App can
+// refresh its name list.
+export default function useDirectorDashboard({ onRosterChange } = {}) {
   const [selectedName, setSelectedName] = useState('');
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -443,6 +446,39 @@ export default function useDirectorDashboard() {
     return result;
   }
 
+  // Same always-resolves pattern as handleSaveEntry. staff is the Add
+  // Staff form's fields (see addStaff, attendanceApi.js).
+  async function handleAddStaff(staff) {
+    let result;
+
+    try {
+      result = await addStaff(credentials.name, credentials.code, staff);
+    } catch (err) {
+      return { success: false, error: networkErrorText(err) };
+    }
+
+    if (result.success) {
+      setWorkHoursData((previous) =>
+        previous
+          ? {
+              ...previous,
+              entries: [...previous.entries, result.entry].sort((a, b) => a.name.localeCompare(b.name)),
+            }
+          : previous
+      );
+
+      // A new name changes Daily's roster/absent counts and Weekly's rows.
+      setDailyData(null);
+      setWeeklyDataByWeek({});
+
+      if (onRosterChange) {
+        onRosterChange();
+      }
+    }
+
+    return result;
+  }
+
   async function loadApplications(activeCredentials, options = {}) {
     if (!options.force && applicationsData) {
       return;
@@ -672,6 +708,7 @@ export default function useDirectorDashboard() {
     handleEditDateChange,
     handleSaveEntry,
     handleSaveWorkHours,
+    handleAddStaff,
     handleApproveWeek,
     handleUnapproveWeek,
     handleUpdateApplication,

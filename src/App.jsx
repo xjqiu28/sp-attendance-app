@@ -11,7 +11,7 @@ import './App.scss';
 // switching tabs no longer re-triggers a network call.
 export default function App() {
   const [activeTab, setActiveTab] = useState('attendance');
-  const { names, loading: namesLoading, failed: namesLoadFailed } = useNames();
+  const { names, loading: namesLoading, failed: namesLoadFailed, refreshNames } = useNames();
 
   return (
     <div className="app-shell">
@@ -44,6 +44,7 @@ export default function App() {
             names={names}
             namesLoading={namesLoading}
             namesLoadFailed={namesLoadFailed}
+            onRosterChange={refreshNames}
           />
         )}
       </main>

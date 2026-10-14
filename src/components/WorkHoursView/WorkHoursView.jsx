@@ -1,10 +1,15 @@
 import WorkHoursCard from '../WorkHoursCard/WorkHoursCard.jsx';
+import AddStaffForm from '../AddStaffForm/AddStaffForm.jsx';
 import StatusMessage from '../StatusMessage/StatusMessage.jsx';
 import '../../styles/CardGrid.scss';
 
-export default function WorkHoursView({ data, loading, error, onSaveWorkHours, viewMode }) {
+// The director dashboard's Staff tab: an Add Staff form, then every
+// person's editable Work Hours.
+export default function WorkHoursView({ data, loading, error, onSaveWorkHours, onAddStaff, viewMode }) {
   return (
     <>
+      <AddStaffForm onAdd={onAddStaff} />
+
       {error && <StatusMessage text={error} type="error" />}
 
       {loading ? (

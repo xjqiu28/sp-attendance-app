@@ -6,7 +6,7 @@
  * directly: the legacy Google Form trigger, and the web app's
  * doPost/doGet. Everything they rely on lives in the other files in
  * this project (Config.gs, Utils.gs, AttendanceLogic.gs, RosterCache.gs,
- * DirectorView.gs, EditDay.gs, WorkHours.gs, WeekApprovals.gs, AutoSignOut.gs,
+ * DirectorView.gs, EditDay.gs, WorkHours.gs, Staff.gs, WeekApprovals.gs, AutoSignOut.gs,
  * Applications.gs, WeeklyReport.gs, PersonalCodes.gs) — Apps Script
  * treats every .gs file in the project as one shared global scope, so
  * splitting the code up like this doesn't require any imports.
@@ -199,6 +199,8 @@ function doPost(e) {
         data.startTime,
         data.endTime
       );
+    } else if (action === 'addStaff') {
+      output = addStaffMember(submittedName, submittedPersonalCode, data.staff);
     } else if (action === 'approveWeek') {
       output = approveWeek(submittedName, submittedPersonalCode, data.targetName, data.weekStart);
     } else if (action === 'unapproveWeek') {

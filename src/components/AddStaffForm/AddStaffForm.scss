@@ -1,0 +1,70 @@
+@use '@/styles/variables' as vars;
+
+.add-staff-toggle {
+  margin-bottom: 16px;
+
+  button {
+    width: auto;
+    margin-top: 0;
+    padding: 10px 16px;
+  }
+}
+
+.add-staff {
+  background: vars.$color-surface;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: vars.$shadow-card;
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+.add-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  column-gap: 14px;
+}
+
+.add-staff-field-wide {
+  grid-column: 1 / -1;
+}
+
+// LoginCard.scss makes every input full-width — undo that for the
+// checkbox so it sits inline with its text.
+.add-staff-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+  margin-top: 16px;
+  cursor: pointer;
+
+  input {
+    width: auto;
+    margin: 0;
+  }
+}
+
+.add-staff-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+
+  button {
+    width: auto;
+    margin-top: 0;
+  }
+}
+
+.add-staff-cancel {
+  background: vars.$color-neutral-bg;
+  color: vars.$color-text-secondary;
+
+  &:hover:not(:disabled) {
+    background: vars.$color-border-light;
+  }
+}

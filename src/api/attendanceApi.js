@@ -129,6 +129,23 @@ export async function updateWorkHours(name, code, targetName, startTime, endTime
   return response.json();
 }
 
+// Adds a new person to the attendance roster. staff is { name,
+// birthday ("YYYY-MM-DD" or ''), personalCode ('' to generate it from
+// the birthday), startTime, endTime ("HH:MM" or '' for both),
+// maxWeeklyHours, isAdmin }. Director-only. Returns { success: true,
+// message, entry: { name, workHours, startTime, endTime } } or
+// { success: false, error }. Throws (with err.name === 'AbortError' on
+// timeout) on network failure.
+export async function addStaff(name, code, staff) {
+  const response = await fetchWithTimeout(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'addStaff', name, code, staff }),
+  });
+
+  return response.json();
+}
+
 // Records that name/code (a director) approved targetName's week
 // starting weekStart (the "M/d/yyyy" weekStart a getDirectorView weekly
 // call returned). Director-only. Returns { success: true, message,
