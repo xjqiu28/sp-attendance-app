@@ -1,0 +1,79 @@
+import ApplicationCard, { type SaveApplication } from '../ApplicationCard/ApplicationCard.tsx';
+import type { Application } from '@/api/attendanceApi.ts';
+import type { ActionState, ViewMode } from '@/hooks/useDirectorDashboard.ts';
+import StatusMessage from '../StatusMessage/StatusMessage.tsx';
+import '@/App.scss'; // .tab, reused here for the sync button's base look
+import '@/styles/CardGrid.scss';
+import './ApplicationsView.scss';
+
+interface ApplicationsViewProps {
+  data: { applications: Application[] } | null;
+  loading: boolean;
+  error: string | null;
+  syncState: ActionState;
+  onSync: () => void;
+  onUpdateApplication: SaveApplication;
+  offerLettersState: ActionState;
+  onSendOfferLetters: () => void;
+  offerRepliesState: ActionState;
+  onCheckOfferReplies: () => void;
+  viewMode: ViewMode;
+}
+
+export default function ApplicationsView({
+  data,
+  loading,
+  error,
+  syncState,
+  onSync,
+  onUpdateApplication,
+  offerLettersState,
+  onSendOfferLetters,
+  offerRepliesState,
+  onCheckOfferReplies,
+  viewMode,
+}: ApplicationsViewProps) {
+  return (
+    <div className="applications-view">
+      <div className="applications-view-toolbar">
+        <button type="button" className="tab" onClick={onSync} disabled={syncState.loading}>
+          {syncState.loading ? 'Syncing...' : 'Sync Scheduled Times'}
+        </button>
+        <button type="button" className="tab" onClick={onSendOfferLetters} disabled={offerLettersState.loading}>
+          {offerLettersState.loading ? 'Sending...' : 'Send Offer Letters'}
+        </button>
+        <button type="button" className="tab" onClick={onCheckOfferReplies} disabled={offerRepliesState.loading}>
+          {offerRepliesState.loading ? 'Checking...' : 'Check Replies'}
+        </button>
+      </div>
+
+      <div className="applications-view-toolbar-messages">
+        {syncState.message && <p className="applications-sync-message success">{syncState.message}</p>}
+        {syncState.error && <p className="applications-sync-message error">{syncState.error}</p>}
+        {offerLettersState.message && <p className="applications-sync-message success">{offerLettersState.message}</p>}
+        {offerLettersState.error && <p className="applications-sync-message error">{offerLettersState.error}</p>}
+        {offerRepliesState.message && <p className="applications-sync-message success">{offerRepliesState.message}</p>}
+        {offerRepliesState.error && <p className="applications-sync-message error">{offerRepliesState.error}</p>}
+      </div>
+
+      {error && <StatusMessage text={error} type="error" />}
+
+      {loading ? (
+        <StatusMessage text="Loading..." type="" />
+      ) : (
+        data && (
+          <div className={viewMode === 'list' ? 'entry-list' : 'card-grid'}>
+            {data.applications.map((entry) => (
+              <ApplicationCard
+                key={entry.email || `${entry.firstName}-${entry.lastName}`}
+                entry={entry}
+                onSave={onUpdateApplication}
+                viewMode={viewMode}
+              />
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}

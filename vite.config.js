@@ -27,6 +27,6 @@ export default defineConfig({
   // imports are stubbed out, since tests only check behavior/markup.
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.js'],
+    setupFiles: ['./src/test/setup.ts'],
   },
 });
