@@ -10,6 +10,7 @@ export default function LoginCard({
   names,
   namesLoading,
   namesLoadFailed,
+  searchable,
   selectedName,
   onNameChange,
   code,
@@ -30,6 +31,7 @@ export default function LoginCard({
           names={names}
           namesLoading={namesLoading}
           namesLoadFailed={namesLoadFailed}
+          searchable={searchable}
           selectedName={selectedName}
           onNameChange={onNameChange}
           code={code}

@@ -232,13 +232,14 @@ function doPost(e) {
 }
 
 // Hitting the deployed URL in a browser confirms it's live. Add
-// ?action=getNames to the URL and it returns the name list for the dropdown.
+// ?action=getNames to the URL and it returns the name list for the
+// dropdown, plus directorNames for the director login's dropdown.
 function doGet(e) {
   const action = e && e.parameter ? e.parameter.action : undefined;
 
   if (action === 'getNames') {
     return ContentService.createTextOutput(
-      JSON.stringify({ names: getNamesList() })
+      JSON.stringify({ names: getNamesList(), directorNames: getDirectorNamesList() })
     ).setMimeType(ContentService.MimeType.JSON);
   }
 

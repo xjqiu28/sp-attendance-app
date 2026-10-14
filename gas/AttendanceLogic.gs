@@ -482,3 +482,27 @@ function getNamesList() {
 
   return names;
 }
+
+/**
+ * Just the roster names marked Admin (see authorizeDirector,
+ * DirectorView.gs), sorted — the director login's dropdown shows only
+ * these instead of everyone.
+ */
+function getDirectorNamesList() {
+  const sheet = getAttendanceSheet();
+  const columnIndexes = getColumnIndexes(sheet);
+
+  if (columnIndexes.Name === undefined) {
+    return [];
+  }
+
+  const roster = getRoster(sheet, columnIndexes);
+
+  const names = Object.keys(roster.byLowerName)
+    .map((key) => roster.byLowerName[key])
+    .filter((person) => person.isAdmin)
+    .map((person) => person.name);
+  names.sort((a, b) => a.localeCompare(b));
+
+  return names;
+}

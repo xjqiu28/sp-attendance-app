@@ -14,10 +14,14 @@ async function fetchWithTimeout(url, options) {
   }
 }
 
+// Returns { names, directorNames } — everyone, and just the Admin
+// names for the director login. directorNames falls back to everyone
+// if the backend predates it.
 export async function fetchNames() {
   const response = await fetchWithTimeout(`${WEB_APP_URL}?action=getNames`);
   const result = await response.json();
-  return result.names || [];
+  const names = result.names || [];
+  return { names, directorNames: result.directorNames || names };
 }
 
 // direction is 'in' or 'out' — which button was pressed. Returns

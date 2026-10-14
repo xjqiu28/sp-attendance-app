@@ -3,18 +3,20 @@ import { fetchNames } from '../api/attendanceApi.js';
 
 const CACHE_KEY = 'sp-attendance-names-cache';
 
+// Cached as { names, directorNames }. An older cache (a plain array of
+// names, from before directorNames existed) is treated as no cache.
 function readCachedNames() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-    return Array.isArray(cached) ? cached : null;
+    return cached && Array.isArray(cached.names) && Array.isArray(cached.directorNames) ? cached : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedNames(names) {
+function writeCachedNames(fetched) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(names));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(fetched));
   } catch {
     // Storage unavailable (private browsing, quota, etc) — safe to ignore,
     // the app just falls back to fetching every time.
@@ -27,7 +29,8 @@ function writeCachedNames(names) {
 // refreshNames re-fetches on demand — e.g. after a director adds
 // someone, so they show up in the dropdowns without a page reload.
 export default function useNames() {
-  const [names, setNames] = useState(() => readCachedNames() || []);
+  const [names, setNames] = useState(() => readCachedNames()?.names || []);
+  const [directorNames, setDirectorNames] = useState(() => readCachedNames()?.directorNames || []);
   const [loading, setLoading] = useState(() => readCachedNames() === null);
   const [failed, setFailed] = useState(false);
 
@@ -35,10 +38,11 @@ export default function useNames() {
     let isMounted = true;
 
     fetchNames()
-      .then((fetchedNames) => {
+      .then((fetched) => {
         if (isMounted) {
-          setNames(fetchedNames);
-          writeCachedNames(fetchedNames);
+          setNames(fetched.names);
+          setDirectorNames(fetched.directorNames);
+          writeCachedNames(fetched);
         }
       })
       .catch(() => {
@@ -60,13 +64,14 @@ export default function useNames() {
 
   async function refreshNames() {
     try {
-      const fetchedNames = await fetchNames();
-      setNames(fetchedNames);
-      writeCachedNames(fetchedNames);
+      const fetched = await fetchNames();
+      setNames(fetched.names);
+      setDirectorNames(fetched.directorNames);
+      writeCachedNames(fetched);
     } catch {
       // Keep showing the current list — it'll catch up on the next load.
     }
   }
 
-  return { names, loading, failed, refreshNames };
+  return { names, directorNames, loading, failed, refreshNames };
 }
