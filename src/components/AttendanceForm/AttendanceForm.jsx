@@ -52,7 +52,7 @@ export default function AttendanceForm({ names, namesLoading, namesLoadFailed })
   return (
     <LoginCard
       title="Attendance"
-      subtitle="Search for or select your name, enter your personal code, then press Sign In or Sign Out."
+      subtitle="Type or select your name, enter your personal code, then press Sign In or Sign Out."
       names={names}
       searchable
       namesLoading={namesLoading}

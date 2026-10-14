@@ -1,0 +1,61 @@
+@use '@/styles/variables' as vars;
+
+.name-combobox {
+  position: relative;
+
+  // Same chevron a native <select> shows, so it still reads as a dropdown.
+  &::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid vars.$color-text-muted;
+    border-bottom: 2px solid vars.$color-text-muted;
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  input {
+    padding-right: 34px;
+  }
+}
+
+.name-combobox-options {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: vars.$color-surface;
+  border: 1px solid vars.$color-border;
+  border-radius: 6px;
+  box-shadow: vars.$shadow-card;
+
+  li {
+    padding: 9px 12px;
+    font-size: 15px;
+    color: vars.$color-text;
+    cursor: pointer;
+
+    &.highlighted {
+      background: vars.$color-app-bg;
+    }
+
+    &[aria-selected='true'] {
+      font-weight: 600;
+      color: vars.$color-primary;
+    }
+  }
+
+  .name-combobox-empty {
+    color: vars.$color-text-faint;
+    cursor: default;
+  }
+}
